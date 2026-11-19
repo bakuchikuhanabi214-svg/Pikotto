@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pikotto.emojiclash.com/sitemap.xml
