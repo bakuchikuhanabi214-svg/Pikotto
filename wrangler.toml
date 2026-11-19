@@ -1,0 +1,7 @@
+name = "pikotto-api"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+
+[[kv_namespaces]]
+binding = "PETS"
+id = "ここに wrangler kv namespace create PETS で出たIDを入れる"

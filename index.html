@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2a2440">
+<title>ぴこっと — ドットのいきものと毎日すごすゲーム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#2a2440; --shell:#f6e7d0; --ink:#3a2b3f; --accent:#ff8fa8; --accent2:#ffd36e; --btn:#fff8ee; --line:#3a2b3f; }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+    font-family:"DotGothic16","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif;overscroll-behavior:none}
+  body{display:flex;justify-content:center;align-items:flex-start;
+    padding:calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px)}
+  #shell{width:min(100%,400px);background:var(--shell);border:4px solid var(--line);border-radius:28px;
+    padding:14px 14px 16px;box-shadow:0 8px 0 #15121f;position:relative}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+  #petName{font-size:20px;line-height:1.1}
+  #stageLabel{font-size:11px;background:var(--line);color:var(--shell);padding:2px 6px;border-radius:6px;margin-left:6px;vertical-align:middle}
+  #dayInfo{font-size:11px;text-align:right;line-height:1.4;opacity:.85}
+  .iconbtn{border:3px solid var(--line);background:var(--btn);border-radius:10px;width:36px;height:36px;font-size:16px;
+    font-family:inherit;color:var(--ink);cursor:pointer;flex:none;box-shadow:0 3px 0 var(--line)}
+  .iconbtn:active{transform:translateY(3px);box-shadow:none}
+  #screenWrap{position:relative;border:4px solid var(--line);border-radius:14px;overflow:hidden;background:#000;aspect-ratio:1/1}
+  canvas#c{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges;cursor:pointer;touch-action:none}
+  #bubble{position:absolute;left:50%;top:7%;transform:translateX(-50%);max-width:86%;min-width:40%;
+    background:#fff;border:3px solid var(--line);border-radius:12px;padding:8px 12px;font-size:17px;line-height:1.45;
+    text-align:center;white-space:pre-wrap;word-break:break-all;pointer-events:none;opacity:0;transition:opacity .15s}
+  #bubble.show{opacity:1}
+  #bubble::after{content:"";position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);
+    border:8px solid transparent;border-top-color:var(--line);border-bottom:0}
+  #bubble .narr{font-size:13px;opacity:.65}
+  #toast{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:var(--line);color:var(--accent2);
+    padding:6px 12px;border-radius:8px;font-size:13px;white-space:nowrap;opacity:0;transition:opacity .3s;pointer-events:none;max-width:94%;overflow:hidden;text-overflow:ellipsis}
+  #toast.show{opacity:1}
+  #hud{position:absolute;left:8px;top:8px;right:8px;display:none;justify-content:space-between;font-size:15px;
+    color:#fff;text-shadow:2px 2px 0 var(--line),-1px -1px 0 var(--line);pointer-events:none}
+  #hud.show{display:flex}
+  #tripBack{position:absolute;right:8px;bottom:8px;display:none;border:3px solid var(--line);background:var(--btn);border-radius:10px;
+    padding:4px 10px;font-family:inherit;font-size:13px;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--line)}
+  #tripBack.show{display:block}
+  #stats{display:grid;grid-template-columns:auto 1fr;gap:5px 8px;align-items:center;margin:12px 2px 4px;font-size:13px}
+  .bar{height:12px;border:3px solid var(--line);border-radius:6px;background:#fff;overflow:hidden}
+  .bar>i{display:block;height:100%;width:50%;transition:width .8s;background:repeating-linear-gradient(90deg,var(--c) 0 6px,var(--c2) 6px 8px)}
+  #b-hunger{--c:#ffb35c;--c2:#f29b3a} #b-mood{--c:#7fd0ff;--c2:#5ab4e8} #b-love{--c:#ff8fa8;--c2:#f2708f}
+  #infoRow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+  #mBtn{flex:1;border:3px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-family:inherit;font-size:13px;
+    color:var(--ink);text-align:left;cursor:pointer;display:flex;justify-content:space-between}
+  #mBtn b{font-weight:normal;color:#e0a000;letter-spacing:2px}
+  #coinBox{display:flex;align-items:center;gap:4px;font-size:16px;border:3px solid var(--line);background:#fff;border-radius:10px;padding:4px 10px}
+  #coinBox canvas{width:16px;height:16px;image-rendering:pixelated}
+  #actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
+  .act{border:3px solid var(--line);background:var(--btn);border-radius:12px;padding:7px 0 5px;font-family:inherit;
+    font-size:11px;color:var(--ink);cursor:pointer;box-shadow:0 4px 0 var(--line);display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap}
+  .act canvas{width:24px;height:24px;image-rendering:pixelated}
+  .act:active{transform:translateY(4px);box-shadow:none}
+  .act:disabled{opacity:.45}
+  #modal{position:fixed;inset:0;background:rgba(20,16,32,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+  #modal.show{display:flex}
+  .card{background:var(--shell);border:4px solid var(--line);border-radius:18px;padding:18px;width:min(100%,360px);
+    max-height:86vh;overflow:auto;box-shadow:0 6px 0 #15121f;user-select:text;-webkit-user-select:text}
+  .card h2{margin:0 0 10px;font-size:18px;font-weight:normal}
+  .card h3{margin:14px 0 6px;font-size:14px;font-weight:normal;opacity:.75}
+  .card p{font-size:13px;line-height:1.6;margin:6px 0}
+  .card label{display:block;font-size:13px;margin:10px 0 4px}
+  .card input{width:100%;font-family:inherit;font-size:18px;padding:8px 10px;border:3px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);user-select:text;-webkit-user-select:text}
+  .row{display:flex;gap:8px;margin-top:14px}
+  .btn{flex:1;border:3px solid var(--line);background:var(--accent2);border-radius:10px;padding:10px;font-family:inherit;font-size:15px;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--line);text-align:center;text-decoration:none}
+  .btn.sub{background:var(--btn)} .btn.danger{background:#ff9a8a} .btn.x{background:#1d1b22;color:#fff}
+  .btn:active{transform:translateY(3px);box-shadow:none}
+  .btn:disabled{opacity:.45}
+  .err{color:#c0392b;font-size:12px;min-height:16px;margin-top:4px}
+  .tabs{display:flex;gap:6px;margin-bottom:10px}
+  .tab{flex:1;border:3px solid var(--line);border-radius:10px;padding:6px 2px;background:var(--btn);font-family:inherit;font-size:13px;color:var(--ink);cursor:pointer}
+  .tab.on{background:var(--accent)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{border:2px solid var(--line);border-radius:8px;padding:3px 8px;background:#fff;font-size:14px}
+  .chip small{opacity:.6;margin-left:4px;font-size:10px;letter-spacing:1px}
+  ul.diary{list-style:none;padding:0;margin:0;font-size:13px;line-height:1.5}
+  ul.diary li{padding:6px 0;border-bottom:2px dashed rgba(58,43,63,.25)}
+  ul.diary b{font-weight:normal;opacity:.6;margin-right:6px}
+  .item{display:flex;align-items:center;gap:10px;padding:8px;border:3px solid var(--line);border-radius:12px;background:#fff;margin-bottom:8px}
+  .item canvas{width:36px;height:30px;image-rendering:pixelated;flex:none}
+  .item .nm{flex:1;font-size:14px;line-height:1.35}
+  .item .nm small{display:block;font-size:11px;opacity:.65}
+  .item button{border:3px solid var(--line);background:var(--accent2);border-radius:8px;padding:6px 10px;font-family:inherit;font-size:13px;color:var(--ink);cursor:pointer;min-width:74px}
+  .item button:disabled{opacity:.45}
+  .item.locked{opacity:.55}
+  .mis{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:3px solid var(--line);border-radius:10px;background:#fff;margin-bottom:8px;font-size:14px}
+  .mis.done{background:#fff3c4}
+  .prof{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;line-height:1.6}
+  .prof span:nth-child(odd){opacity:.6}
+  .idbox{font-size:18px;letter-spacing:1px;background:var(--line);color:var(--accent2);padding:8px;border-radius:10px;text-align:center;margin:4px 0 10px}
+  #photoImg{width:100%;border:3px solid var(--line);border-radius:10px;image-rendering:pixelated;display:block;-webkit-touch-callout:default;user-select:auto}
+  .prev{display:block;margin:0 auto 10px;width:176px;height:176px;image-rendering:pixelated;border:3px solid var(--line);border-radius:12px}
+  .wgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .wcell{border:3px solid var(--line);border-radius:10px;background:#fff;padding:6px 2px 4px;font-family:inherit;font-size:11px;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.2}
+  .wcell canvas{width:36px;height:24px;image-rendering:pixelated}
+  .wcell.on{background:var(--accent)}
+  .tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .tcell{border:3px solid var(--line);border-radius:10px;background:#fff;padding:6px 2px;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;line-height:1.25}
+  .tcell canvas{width:30px;height:30px;image-rendering:pixelated}
+  .tcell.no{opacity:.45}
+  .place{display:flex;align-items:center;gap:10px;padding:10px;border:3px solid var(--line);border-radius:12px;background:#fff;margin-bottom:8px;cursor:pointer;width:100%;font-family:inherit;color:var(--ink);text-align:left}
+  .place canvas{width:56px;height:42px;image-rendering:pixelated;border:2px solid var(--line);border-radius:6px;flex:none}
+  .place .nm{font-size:15px;line-height:1.35} .place .nm small{display:block;font-size:11px;opacity:.65}
+  .place:disabled{opacity:.5;cursor:default}
+  #debug{display:none;gap:6px;margin-top:10px;flex-wrap:wrap}
+  #debug button{font-family:inherit;font-size:11px;border:2px solid var(--line);border-radius:6px;background:#fff;padding:4px 6px}
+</style>
+</head>
+<body>
+<div id="shell">
+  <header>
+    <div><span id="petName">？？？</span><span id="stageLabel">たまご</span></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div id="dayInfo"></div>
+      <button class="iconbtn" id="btnSettings" aria-label="せってい">⚙</button>
+    </div>
+  </header>
+  <div id="screenWrap">
+    <canvas id="c" width="64" height="64"></canvas>
+    <div id="bubble"></div>
+    <div id="hud"><span id="hudL"></span><span id="hudR"></span></div>
+    <button id="tripBack">おうちにかえる</button>
+    <div id="toast"></div>
+  </div>
+  <div id="stats">
+    <span>おなか</span><div class="bar" id="b-hunger"><i></i></div>
+    <span>ごきげん</span><div class="bar" id="b-mood"><i></i></div>
+    <span id="loveLabel">なかよし</span><div class="bar" id="b-love"><i></i></div>
+  </div>
+  <div id="infoRow">
+    <button id="mBtn"><span>きょうのおねがい</span><b id="mStars">☆☆☆</b></button>
+    <div id="coinBox"><canvas width="8" height="8" data-icon="coin"></canvas><span id="coins">0</span></div>
+  </div>
+  <div id="actions">
+    <button class="act" id="aFeed"><canvas width="8" height="8" data-icon="food"></canvas>ごはん</button>
+    <button class="act" id="aPlay"><canvas width="8" height="8" data-icon="ball"></canvas>あそぶ</button>
+    <button class="act" id="aTeach"><canvas width="8" height="8" data-icon="talk"></canvas>おしえる</button>
+    <button class="act" id="aWear"><canvas width="8" height="8" data-icon="hat"></canvas>きせかえ</button>
+    <button class="act" id="aShop"><canvas width="8" height="8" data-icon="shop"></canvas>おみせ</button>
+    <button class="act" id="aPhoto"><canvas width="8" height="8" data-icon="camera"></canvas>しゃしん</button>
+    <button class="act" id="aTreasure"><canvas width="8" height="8" data-icon="gem"></canvas>たからもの</button>
+    <button class="act" id="aNote"><canvas width="8" height="8" data-icon="book"></canvas>ノート</button>
+  </div>
+  <div id="debug">
+    <button data-d="day">+1日</button><button data-d="away">3日あける</button><button data-d="grow">せいちょう</button><button data-d="hungry">おなか-50</button>
+    <button data-d="coin">コイン+100</button><button data-d="reroll">たまご引き直し</button><button data-d="reset">リセット</button>
+  </div>
+</div>
+<div id="modal"><div class="card" id="card"></div></div>
+
+<script>
+(() => {
+'use strict';
+// =====================================================================
+//  重複チェック用サーバー（Cloudflare Worker）のURL。空ならオフライン動作
+//  例) const API_URL = 'https://pikotto-api.あなたのサブドメイン.workers.dev';
+// =====================================================================
+const API_URL = '';
+
+// ============ ユーティリティ ============
+const $ = s => document.querySelector(s);
+const clamp = (v, a = 0, b = 100) => Math.max(a, Math.min(b, v));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const chars = s => [...s];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DAY = 86400000;
+const KEY = 'pikotto_save_v1';
+
+// ============ 遺伝子（キャラの見た目） ============
+function rng32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function newSeed() {
+  const b = new Uint8Array(6);
+  try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < 6; i++) b[i] = Math.random() * 256 | 0; }
+  return [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+const fmtId = s => s.toUpperCase().match(/.{4}/g).join('-');
+const SHAPEN = { round: 'まんまる', tall: 'のっぽ', wide: 'ずんぐり', pear: 'しずく', bean: 'おまめ' };
+const PATN = { none: 'むじ', spots: 'ぶち', stripes: 'しましま', belly: 'おなかしろ', patch: 'かためぶち', socks: 'くつした', stars: 'ほしもよう' };
+const EYEN = { dot: 'つぶらな目', tall: 'たて長の目', big: 'おおきな目', sleepy: 'ねむそうな目', sparkle: 'きらきらの目' };
+const EARN = { cat: 'ねこみみ', bunny: 'うさみみ', round: 'まるいみみ', horn: 'ツノ', antenna: 'しょっかく', leaf: 'はっぱ' };
+const TAILN = { none: 'なし', curl: 'くるくるしっぽ', spike: 'とげとげしっぽ', fluff: 'ふわふわしっぽ' };
+const ACCN = { sprout: 'あたまの芽', crown: 'ちいさなかんむり', flower: 'お花', halo: 'てんしのわっか', bow: 'リボン', star: 'うかぶおほしさま' };
+
+function makeGenes(seed) {
+  const r = rng32((parseInt(seed.slice(0, 8), 16) ^ Math.imul(parseInt(seed.slice(8), 16) + 1, 2654435761)) >>> 0);
+  const ri = n => Math.floor(r() * n), pk = a => a[ri(a.length)];
+  const hue = ri(72) * 5, sat = 55 + ri(4) * 10, lig = 62 + ri(3) * 6;
+  const ahue = (hue + pk([30, 60, 150, 180, 210, 300])) % 360;
+  const g = {
+    hue, sat, lig, ahue,
+    shape: pk(Object.keys(SHAPEN)), ear: pk(Object.keys(EARN)), eye: pk(Object.keys(EYEN)), eyeGap: 0.3 + ri(4) * 0.05,
+    mouth: pk(['small', 'cat', 'fang', 'beak']), pattern: pk(Object.keys(PATN)), stripeV: r() < .5,
+    cheek: pk(['ff8fa8', 'ffa66b', '9fd6ff', 'n']), tail: pk(Object.keys(TAILN)), acc: pk(Object.keys(ACCN)),
+    voice: 520 + ri(10) * 40, spots: []
+  };
+  const n = 3 + ri(4);
+  for (let i = 0; i < n; i++) g.spots.push([r() * 1.6 - .8, r() * 1.6 - .8, .14 + r() * .16]);
+  g.pal = {
+    b: `hsl(${hue},${sat}%,${lig}%)`, s: `hsl(${hue},${sat}%,${lig - 14}%)`, l: `hsl(${hue},${sat - 10}%,${Math.min(92, lig + 16)}%)`,
+    o: `hsl(${hue},45%,22%)`, a: `hsl(${ahue},${sat}%,${lig - 8}%)`, ao: `hsl(${ahue},45%,25%)`
+  };
+  g.look = [hue, sat, lig, ahue, g.shape, g.ear, g.eye, Math.round(g.eyeGap * 100), g.mouth, g.pattern, g.stripeV ? 1 : 0, g.cheek, g.tail, g.acc,
+    g.spots.map(s => s.map(v => Math.round(v * 5)).join('.')).join('_')].join('-');
+  return g;
+}
+
+// ============ データ：きせかえ ============
+const CLOTHES = {
+  straw:    { slot: 'head', name: 'むぎわらぼうし', price: 40, spr: ['...DDDDD...', '..DYYYYYD..', '..RRRRRRR..', 'DYYYYYYYYYD'], map: { D: '#c9a54a', Y: '#f2d17a', R: '#e05a5a' } },
+  knit:     { slot: 'head', name: 'ニットぼう', price: 30, spr: ['....W....', '..CCCCC..', '.CCcCcCC.', '.CCCCCCC.', 'WWWWWWWWW'], map: { C: '#5a8de0', c: '#9fc2ff', W: '#ffffff' } },
+  witch:    { slot: 'head', name: 'まじょのぼうし', price: 70, spr: ['......KK...', '.....KKK...', '....KKKK...', '...KKKKKK..', '...PPPPPP..', 'KKKKKKKKKKK'], map: { K: '#3b2a5c', P: '#ffcc33' } },
+  silk:     { slot: 'head', name: 'シルクハット', price: 60, spr: ['..KKKKK..', '..KKKKK..', '..KKKKK..', '..KKKKK..', '..RRRRR..', 'KKKKKKKKK'], map: { K: '#2b2b33', R: '#ff4d6d' } },
+  tiara:    { slot: 'head', name: 'ティアラ', price: 80, spr: ['...B...', '.Y.Y.Y.', 'YYYYYYY'], map: { B: '#5ab4ff', Y: '#ffd84d' } },
+  phones:   { slot: 'head', name: 'ヘッドホン', price: 50, icon: ['.KKKKKK.', 'K......K', 'K......K', 'RR....RR', 'RR....RR'], imap: { K: '#3a3a48', R: '#ff5a7a' } },
+  band:     { slot: 'head', name: 'はちまき', price: 20, icon: ['RRRRRRRR', 'RRRRRRRR', '......RR', '.......R'], imap: { R: '#ff4d4d' } },
+  fcrown:   { slot: 'head', name: 'はなかんむり', rare: 'park', spr: ['P.Y.P.Y.P', 'GPGYGPGYG'], map: { P: '#ff8fc0', Y: '#ffe066', G: '#5fae55' } },
+  shellpin: { slot: 'head', name: 'かいがらのかみかざり', rare: 'beach', spr: ['.SSS.', 'SsSsS', '.SSS.'], map: { S: '#ffc9b5', s: '#ff9e80' } },
+  starpin:  { slot: 'head', name: 'ほしのかみかざり', rare: 'hill', spr: ['..Y..', '.YYY.', 'YYYYY', '.Y.Y.'], map: { Y: '#ffe066' } },
+  roundg:   { slot: 'face', name: 'まるメガネ', price: 30, icon: ['.GGG..GGG.', 'G...GG...G', 'G...G.G..G', '.GGG..GGG.'], imap: { G: '#c99a2e' } },
+  sun:      { slot: 'face', name: 'サングラス', price: 40, icon: ['KKKKKKKKKK', 'KWKKKKWKKK', '.KKK..KKK.'], imap: { K: '#1d1b22', W: '#8a8aa0' } },
+  heartg:   { slot: 'face', name: 'ハートメガネ', price: 50, icon: ['.P.P..P.P.', 'PPPPPPPPPP', '.PPP..PPP.', '..P....P..'], imap: { P: '#ff5c86' } },
+  bowtie:   { slot: 'neck', name: 'ちょうネクタイ', price: 25, spr: ['RR.RR', 'RRYRR', 'RR.RR'], map: { R: '#ff4d6d', Y: '#ffb3c1' } },
+  scarf:    { slot: 'neck', name: 'スカーフ', price: 30, icon: ['BBBBBBBB', 'BBBBBBBB', '.....BB.', '.....BB.'], imap: { B: '#5ab4ff' } },
+  bell:     { slot: 'neck', name: 'すず', price: 35, icon: ['RRRRRRRR', '...YY...', '..YYYY..', '..YKKY..'], imap: { R: '#e04848', Y: '#ffd84d', K: '#7a5a00' } },
+  muffler:  { slot: 'neck', name: 'しましまマフラー', price: 45, icon: ['RWRWRWRW', 'RWRWRWRW', '..RW....', '..WR....'], imap: { R: '#ff6b6b', W: '#fff3e0' } },
+};
+const SLOTN = { head: 'あたま', face: 'かお', neck: 'くび' };
+
+// ============ データ：おでかけ・たからもの ============
+const TPL = {
+  nut: ['.BB.', 'BBBB', 'CCCC', '.CC.'], cone: ['.B.', 'BCB', 'BBB', 'BCB', '.B.'], stone: ['.SS.', 'SLSS', 'SSSS', '.SS.'],
+  leaf: ['..LL', '.LLL', 'LLL.', 'L...'], clover: ['GG.GG', 'GGGGG', '.GGG.', 'GG.GG', '..S..'], shell: ['.SSS.', 'SLSLS', 'SLSLS', '.SSS.'],
+  glass: ['.GG.', 'GLGG', 'GGGG', '.GG.'], sand: ['Y..Y', '.Y..', '..Y.', 'Y..Y'], bottle: ['.K.', '.B.', 'BLB', 'BBB', 'BBB'],
+  flower: ['.P.', 'PYP', '.P.', '.G.'], star: ['..Y..', '.YYY.', 'YYYYY', '.Y.Y.'], moon: ['.YY.', 'YY..', 'YY..', '.YY.'],
+};
+const TREAS = {
+  park: [
+    { id: 'acorn', name: 'どんぐり', tpl: 'nut', map: { B: '#7a4a22', C: '#c98a4a' } },
+    { id: 'pinecone', name: 'まつぼっくり', tpl: 'cone', map: { B: '#8a5a2b', C: '#c08a55' } },
+    { id: 'momiji', name: 'もみじ', tpl: 'leaf', map: { L: '#ff6a3a' } },
+    { id: 'pstone', name: 'すべすべの石', tpl: 'stone', map: { S: '#9a9aa8', L: '#d0d0dc' } },
+    { id: 'tanpopo', name: 'たんぽぽ', tpl: 'flower', map: { P: '#ffd84d', Y: '#ffa53a', G: '#4f9a47' } },
+    { id: 'clover', name: 'よつばのクローバー', tpl: 'clover', map: { G: '#4fb84a', S: '#2f7a2a' }, rare: true },
+  ],
+  beach: [
+    { id: 'shell', name: 'まきがい', tpl: 'shell', map: { S: '#f0b89a', L: '#fff0e0' } },
+    { id: 'seaglass', name: 'シーグラス', tpl: 'glass', map: { G: '#7fe0c8', L: '#d8fff4' } },
+    { id: 'starsand', name: 'ほしのすな', tpl: 'sand', map: { Y: '#ffe680' } },
+    { id: 'bstone', name: 'まるい石', tpl: 'stone', map: { S: '#c9b8a0', L: '#efe3d0' } },
+    { id: 'sakuragai', name: 'さくらがい', tpl: 'shell', map: { S: '#ffb3c8', L: '#ffffff' }, rare: true },
+    { id: 'bottle', name: 'ながれついたびん', tpl: 'bottle', map: { K: '#8a5a2b', B: '#8fd3ff', L: '#ffffff' }, rare: true },
+  ],
+  hill: [
+    { id: 'starshard', name: 'ほしのかけら', tpl: 'star', map: { Y: '#ffe066' } },
+    { id: 'moonstone', name: 'つきのいし', tpl: 'moon', map: { Y: '#cfe6ff' } },
+    { id: 'nflower', name: 'よるのはな', tpl: 'flower', map: { P: '#8fa8ff', Y: '#ffffff', G: '#3f7a39' } },
+    { id: 'firefly', name: 'ほたるのひかり', tpl: 'sand', map: { Y: '#d8ff7a' } },
+    { id: 'glowstone', name: 'ひかるいし', tpl: 'stone', map: { S: '#6fd0c0', L: '#d8fff8' } },
+    { id: 'meteor', name: 'ながれぼしのかけら', tpl: 'star', map: { Y: '#ffb3e6' }, rare: true },
+  ],
+};
+const TBY = {}; Object.entries(TREAS).forEach(([pl, arr]) => arr.forEach(t => TBY[t.id] = Object.assign({ place: pl }, t)));
+const PLACES = {
+  park:  { name: 'こうえん', ok: () => true, lock: '', hello: 'ひろーい！' },
+  beach: { name: 'うみ', ok: () => S.stage !== 'baby', lock: 'こどもになると行けるよ', hello: 'しおのにおい！' },
+  hill:  { name: 'ほしのおか', ok: () => S.stage === 'adult', lock: 'おとなになると行けるよ', hello: 'ほしが いっぱい！' },
+};
+
+// ============ セーブ ============
+let S, G;
+function newToday(dayKey) { return { pets: 0, teach: 0, play: 0, trip: 0, m: {}, missions: pickMissions(dayKey || dayStr(now())), done: [] }; }
+function fresh() {
+  return {
+    v: 3, seed: newSeed(), stage: 'egg', eggTaps: 0, player: '', pet: '',
+    hunger: 80, mood: 70, affection: 0, lastTick: Date.now(), lastDay: '', days: 0, streak: 0,
+    nameLevel: 0, words: [], diary: [], today: null, sound: true, dbg: 0,
+    coins: 0, inv: { apple: 0, pudding: 0, cake: 0 }, furn: {}, mgBest: 0, registered: false,
+    clothes: {}, wear: { head: null, face: null, neck: null }, treasures: {}, trips: 0, reunions: 0
+  };
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const o = Object.assign(fresh(), JSON.parse(raw)); delete o.poops; delete o.poopAcc; return o; }
+  } catch (e) {}
+  return fresh();
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+const now = () => Date.now() + ((S && S.dbg) || 0) * DAY;
+const dayStr = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const parseDay = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).getTime(); };
+const daysBetween = (a, b) => Math.round((parseDay(b) - parseDay(a)) / DAY);
+const hour = () => new Date(now()).getHours();
+const isNight = () => { const h = hour(); return h >= 22 || h < 6; };
+const fmtDate = t => { const d = new Date(t); return `${d.getMonth()+1}/${d.getDate()}`; };
+
+// ============ おねがい ============
+const MIS = {
+  pet:   { n: 5, label: '5回なでる' },
+  feed:  { n: 2, label: 'ごはんを2回あげる' },
+  play:  { n: 1, label: 'おやつキャッチであそぶ' },
+  score: { n: 15, label: 'おやつキャッチで15こ以上とる' },
+  teach: { n: 1, label: 'ことばを1つおしえる' },
+  photo: { n: 1, label: 'しゃしんをとる' },
+  trip:  { n: 1, label: 'おでかけする' },
+  find:  { n: 3, label: 'おでかけで3こ見つける' },
+  wear:  { n: 1, label: 'きせかえする' },
+};
+function pickMissions(dayKey) {
+  let h = 0; const key = dayKey + ((S && S.seed) || '');
+  for (const c of key) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+  const r = rng32(h);
+  const pool = Object.keys(MIS).filter(k => k !== 'wear' || (S && Object.keys(S.clothes || {}).length));
+  const out = [];
+  while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+  return out;
+}
+
+S = load();
+if (!S.seed) S.seed = newSeed();
+G = makeGenes(S.seed);
+if (!S.today || !S.today.missions) S.today = Object.assign(newToday(), S.today ? { pets: S.today.pets || 0, teach: S.today.teach || 0, play: S.today.play || 0 } : {});
+if (S.today.trip == null) S.today.trip = 0;
+S.today.missions = S.today.missions.map(k => MIS[k] ? k : 'pet');
+
+function diary(text) { S.diary.push({ t: now(), text }); save(); }
+
+// ============ 描画の基本 ============
+const STAGES = { baby: { rx: 8, ry: 7, ears: 0, label: 'あかちゃん' }, child: { rx: 10, ry: 9, ears: 1, label: 'こども' }, adult: { rx: 12, ry: 10, ears: 2, label: 'おとな' } };
+const cv = $('#c');
+let ctx = cv.getContext('2d');
+const P = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), 1, 1); };
+const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
+function sprite(rows, x, y, map, c2) {
+  const g = c2 || ctx;
+  rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) { const col = map[r[i]]; if (col) { g.fillStyle = col; g.fillRect(Math.round(x) + i, Math.round(y) + j, 1, 1); } } });
+}
+function withCtx(c2, fn) { const keep = ctx; ctx = c2; try { fn(); } finally { ctx = keep; } }
+const SPR = {
+  heart: ['.X.X.', 'XXXXX', '.XXX.', '..X..'],
+  q: ['XXX', '..X', '.XX', '...', '.X.'],
+  ex: ['X', 'X', 'X', '.', 'X'],
+  z: ['XXX', '.X.', 'XXX'],
+  note: ['.XX', '.X.', 'XX.'],
+  spark: ['.X.', 'XXX', '.X.'],
+  fruit: ['.G.', 'CCC', 'CCC'],
+  star: ['.Y.', 'YYY', '.Y.'],
+  rock: ['.KK.', 'KGGK', 'KGGK', '.KK.'],
+  tail: {
+    curl: ['..OO.', '.OBBO', 'OB.BO', 'OBBO.', '.OO..'],
+    spike: ['OO...', 'OBOO.', 'OBBBO', 'OBOO.', 'OO...'],
+    fluff: ['.OOO.', 'OLLLO', 'OLLLO', 'OLLLO', '.OOO.'],
+  }
+};
+const FOODS = {
+  onigiri: { name: 'おにぎり', price: 0, h: 35, m: 5, a: 1, note: 'いつでもタダ', spr: ['..K..', '.KWK.', 'KWWWK', 'KWWWK', 'KBBBK', '.KKK.'], map: { K: '#2b2b2b', W: '#fff', B: '#1f3b2a' } },
+  apple:   { name: 'りんご', price: 8, h: 20, m: 12, a: 1, note: 'ごきげん少しアップ', spr: ['..G..', '.RRR.', 'RRWRR', 'RRRRR', '.RRR.'], map: { G: '#4f9a47', R: '#ff4d4d', W: '#ffc0c0' } },
+  pudding: { name: 'プリン', price: 15, h: 15, m: 25, a: 2, note: 'ごきげん大きくアップ', spr: ['.CCC.', '.YYY.', 'YYYYY', 'YYYYY', 'PPPPP'], map: { C: '#8a4b1f', Y: '#ffe07a', P: '#c9c9d6' } },
+  cake:    { name: 'ケーキ', price: 30, h: 30, m: 35, a: 4, note: 'なかよしもアップ', spr: ['..R..', 'WWWWW', 'SSSSS', 'WWWWW', 'SSSSS'], map: { R: '#ff3d5a', W: '#fffaf0', S: '#ffd98a' } },
+};
+const FURN = {
+  poster:  { name: 'ポスター', price: 40, note: 'かべにじぶんの絵' },
+  cushion: { name: 'クッション', price: 30, note: 'ゆかにふかふか' },
+  lamp:    { name: 'ほしのランプ', price: 60, note: '夜に光る' },
+  rug:     { name: 'あおいラグ', price: 50, note: 'ラグのいろがえ' },
+};
+const FRUITC = ['#ff4d4d', '#ffa53a', '#ffe14d', '#b46cff', '#ff7ab8'];
+const GROUND = 54;
+
+// ============ 状態 ============
+let anim = null, particles = [], awakeUntil = 0, flash = 0, nextBlink = 0, mg = null, trip = null, reunion = null, previewing = false, eatFood = 'onigiri';
+let petBox = { x0: 0, x1: 0, y0: 0, y1: 0 };
+function startAnim(type, dur) { anim = { type, start: performance.now(), dur }; }
+
+function skyColor() { const h = hour(); return isNight() ? '#141a33' : (h >= 17) ? '#ff9e6b' : (h < 9) ? '#bfe6ff' : '#8fd0ff'; }
+
+// ============ へや ============
+function drawRoom(t) {
+  const h = hour(), night = isNight(), eve = h >= 17 && h < 22;
+  const wall = night ? '#2d3557' : eve ? '#f0c89a' : '#f3e3c3', wall2 = night ? '#262d4b' : eve ? '#e4b685' : '#e9d5ae';
+  R(0, 0, 64, 44, wall);
+  for (let x = 0; x < 64; x += 8) R(x, 0, 1, 44, wall2);
+  const sky = skyColor();
+  R(6, 8, 18, 14, '#6b4a33'); R(7, 9, 16, 12, sky);
+  if (night) { P(10, 11, '#fff'); P(19, 13, '#fff'); P(14, 17, '#cfd8ff'); R(17, 10, 3, 3, '#fff6c4'); P(17, 10, sky); }
+  else if (eve) R(10, 16, 4, 3, '#ffdd8a');
+  else { R(18, 11, 3, 3, '#fff3a0'); R(9, 15, 5, 2, '#fff'); R(10, 14, 3, 1, '#fff'); }
+  R(15, 9, 1, 12, '#6b4a33'); R(7, 15, 16, 1, '#6b4a33');
+  if (S.furn.poster) { R(29, 7, 11, 12, '#5a4a3f'); R(30, 8, 9, 10, '#fffaf0'); sprite(['.BBB.', 'BBBBB', 'BOBOB', 'BBBBB', '.BBB.'], 32, 10, { B: G.pal.b, O: G.pal.o }); }
+  R(50, 36, 6, 6, '#c0643f'); R(49, 35, 8, 2, '#d9774f');
+  R(52, 30, 2, 5, '#4f9a47'); R(50, 30, 2, 2, '#62b35a'); R(54, 28, 2, 3, '#62b35a');
+  const floor = night ? '#4b3f57' : '#c98d55', floor2 = night ? '#3f354a' : '#b67b46';
+  R(0, 44, 64, 20, floor);
+  for (let y = 47; y < 64; y += 4) R(0, y, 64, 1, floor2);
+  R(0, 44, 64, 1, night ? '#2a2236' : '#8d5c33');
+  const blue = S.furn.rug;
+  for (let x = 14; x < 50; x++) for (let y = 50; y < 60; y++) {
+    const dx = (x + .5 - 32) / 18, dy = (y + .5 - 55) / 5, d = dx*dx + dy*dy;
+    if (d > 1) continue;
+    let c = blue ? ((x % 4 < 2) ? '#9fd0ff' : '#e6f4ff') : '#f0a0a0';
+    if (d > .7) c = blue ? '#4f86c6' : '#e07a7a';
+    if (night) c = d > .7 ? '#6a4f6e' : '#5b4560';
+    P(x, y, c);
+  }
+  if (S.furn.cushion) sprite(['.CCCCCC.', 'CCDCCDCC', 'CCCCCCCC', '.DDDDDD.'], 2, 46, { C: G.pal.a, D: G.pal.ao });
+  if (S.furn.lamp) {
+    R(44, 0, 1, 6, '#3a2b3f');
+    if (night) { ctx.fillStyle = 'rgba(255,230,120,.18)'; ctx.fillRect(38, 2, 13, 13); ctx.fillRect(40, 0, 9, 17); }
+    sprite(['..Y..', '.YYY.', 'YYYYY', '.YYY.', '.Y.Y.'], 42, 6, { Y: night ? '#fff1a0' : '#ffd84d' });
+  }
+}
+
+// ============ そと ============
+const PARK_FL = [[4,50],[11,58],[22,47],[40,61],[50,49],[58,57],[30,63],[16,54],[45,56]];
+const HILL_ST = (() => { const r = rng32(777), a = []; for (let i = 0; i < 34; i++) a.push([Math.floor(r() * 64), Math.floor(r() * 34), r()]); return a; })();
+function drawPlace(place, t) {
+  const night = isNight();
+  if (place === 'park') {
+    const sky = skyColor(); R(0, 0, 64, 44, sky);
+    if (!night) { const cx = ((t / 220) % 84) - 12; R(cx, 8, 9, 2, '#fff'); R(cx + 2, 6, 5, 2, '#fff'); const c2 = ((t / 300 + 40) % 84) - 12; R(c2, 15, 7, 2, '#fff'); }
+    else for (const s of HILL_ST.slice(0, 10)) P(s[0], s[1], '#dfe6ff');
+    for (let x = 0; x < 64; x++) { const h = 34 + Math.round(Math.sin(x / 9) * 3 + Math.sin(x / 4) * 1); R(x, h, 1, 44 - h, night ? '#2f4a3a' : '#9ad48a'); }
+    for (const tx of [6, 57]) { R(tx, 26, 2, 18, '#8a5a3a'); for (let x = -6; x <= 7; x++) for (let y = -6; y <= 6; y++) if (x*x + y*y <= 36) P(tx + x, 24 + y, (x + y < -3) ? (night ? '#3f6a45' : '#7cc46a') : (night ? '#2c4f34' : '#4f9a47')); }
+    R(0, 44, 64, 20, night ? '#2f4a33' : '#7cc46a');
+    for (let x = 0; x < 64; x += 3) P(x, 44 + (x * 7) % 18, night ? '#26402a' : '#62b35a');
+    for (let x = 18; x < 46; x++) for (let y = 50; y < 64; y++) { const dx = (x + .5 - 32) / 14, dy = (y + .5 - 58) / 6; if (dx*dx + dy*dy <= 1) P(x, y, night ? '#5a5048' : '#e6cf9a'); }
+    for (const [fx, fy] of PARK_FL) { P(fx, fy, '#ff8fc0'); P(fx + 1, fy + 1, '#ffe066'); }
+  } else if (place === 'beach') {
+    R(0, 0, 64, 32, skyColor());
+    if (!night) R(46, 6, 5, 5, '#fff3a0'); else { R(46, 6, 4, 4, '#fff6c4'); P(46, 6, skyColor()); }
+    R(0, 32, 64, 12, night ? '#1f3a66' : '#3aa0e0');
+    for (let i = 0; i < 12; i++) { const x = ((i * 13 + t / 90) % 70) - 4, y = 34 + (i * 5) % 9; R(x, y, 3, 1, night ? '#3a5a8a' : '#8fd3ff'); }
+    R(0, 44, 64, 20, night ? '#8a7a60' : '#f2d9a0');
+    for (let x = 0; x < 64; x++) { const fy = 44 + Math.round(Math.sin(x / 5 + t / 500)); P(x, fy, '#ffffff'); }
+    for (let x = 1; x < 64; x += 5) P(x, 48 + (x * 11) % 15, night ? '#7a6a52' : '#e0c088');
+  } else {
+    for (let y = 0; y < 44; y++) { const k = y / 44; R(0, y, 64, 1, `rgb(${20 + k * 40 | 0},${26 + k * 20 | 0},${64 + k * 50 | 0})`); }
+    for (const s of HILL_ST) if (Math.sin(t / 400 + s[2] * 20) > -.3) P(s[0], s[1], s[2] > .8 ? '#fff6c4' : '#dfe6ff');
+    R(48, 6, 6, 6, '#fff6c4'); R(48, 6, 3, 3, '#20264a'); R(48, 9, 1, 3, '#20264a');
+    const sp = (t % 6000) / 6000; if (sp < .15) { const x = 10 + sp * 200, y = 4 + sp * 60; P(x, y, '#fff'); P(x - 1, y - .5, '#cfd8ff'); P(x - 2, y - 1, '#8f9ad8'); }
+    for (let x = 0; x < 64; x++) { const h = 40 + Math.round(Math.sin(x / 12) * 3); R(x, h, 1, 64 - h, '#1f3a30'); P(x, h, '#2f5a46'); }
+    for (const [fx, fy] of PARK_FL) if (Math.sin(t / 500 + fx) > 0) P(fx, fy, '#a8ffcf');
+  }
+}
+
+// ============ たまご ============
+function drawEgg(t) {
+  let wob = 0;
+  if (anim && anim.type === 'wobble') { const p = (t - anim.start) / anim.dur; wob = Math.sin(p * Math.PI * 4) * 1.5 * (1 - p); }
+  else wob = Math.sin(t / 700) * .4;
+  const cx = 32 + wob, cy = GROUND - 9, rx = 7, ry = 9;
+  const d = (x, y) => { const dx = (x + .5 - cx) / rx, dy = (y + .5 - cy) / (y + .5 < cy ? ry : ry * .85); return dx*dx + dy*dy <= 1; };
+  for (let x = 20; x < 44; x++) for (let y = 30; y < 58; y++) {
+    if (!d(x, y)) continue;
+    const edge = !d(x+1, y) || !d(x-1, y) || !d(x, y+1) || !d(x, y-1);
+    let c = '#fffaf0';
+    if (edge) c = '#5a4a3f';
+    else if ((x - cx) + (y - cy) * .8 > 5) c = '#eadfcc';
+    else { const ex = (x + .5 - cx) / rx, ey = (y + .5 - cy) / ry; for (const s of G.spots) if ((ex - s[0]) ** 2 + (ey - s[1]) ** 2 < (s[2] * .8) ** 2) c = (s[2] > .22) ? G.pal.b : G.pal.a; }
+    P(x, y, c);
+  }
+  const crack = [[31,40],[32,41],[33,40],[34,41],[30,41],[29,40],[35,40],[36,41],[28,41],[37,40]];
+  for (let i = 0; i < Math.min(S.eggTaps * 2, crack.length); i++) P(crack[i][0] + wob, crack[i][1], '#5a4a3f');
+  R(cx - 6, GROUND + 1, 12, 1, 'rgba(0,0,0,.18)');
+  petBox = { x0: cx - 9, x1: cx + 9, y0: cy - 11, y1: GROUND + 2 };
+}
+
+// ============ いきもの ============
+function drawPet(t) {
+  const pal = G.pal, st = STAGES[S.stage];
+  const p = anim ? (t - anim.start) / anim.dur : 0;
+  const asleep = !previewing && !mg && !trip && !reunion && isNight() && Date.now() > awakeUntil;
+  let squash = Math.sin(t / (asleep ? 900 : 320)) * (asleep ? .04 : .06);
+  let jump = 0, dx = 0, face = null, mouth = null, tear = false, sparkleFace = false;
+  if (anim && !previewing) {
+    if (anim.type === 'jump') { jump = Math.sin(p * Math.PI) * 5; squash = -.08 * Math.sin(p * Math.PI); face = 'happy'; mouth = 'open'; }
+    if (anim.type === 'eat') { face = p < .85 ? 'normal' : 'happy'; mouth = (Math.floor(t / 160) % 2) ? 'open' : 'line'; }
+    if (anim.type === 'listen') { dx = Math.sin(p * Math.PI * 2); face = 'normal'; mouth = 'line'; }
+    if (anim.type === 'grow') { squash = Math.sin(p * Math.PI * 8) * .12; face = 'happy'; mouth = 'open'; }
+    if (anim.type === 'proud') { jump = Math.abs(Math.sin(p * Math.PI * 2)) * 3; face = 'happy'; mouth = 'smile'; }
+  }
+  if (mg) {
+    dx = mg.x - 32;
+    if (t < mg.stun) { face = 'sad'; mouth = 'frown'; dx += Math.sin(t / 30); }
+    else if (t < mg.happy) { face = 'happy'; mouth = 'open'; jump = 2; }
+  }
+  if (trip) {
+    dx = trip.x - 32;
+    if (trip.digUntil > t) { squash = Math.sin(t / 60) * .1; face = 'happy'; mouth = 'line'; }
+    else if (trip.moving) jump = Math.abs(Math.sin(t / 110)) * 1.6;
+    if (trip.happy > t) { face = 'happy'; mouth = 'open'; jump = Math.max(jump, 3); }
+  }
+  if (reunion && !previewing) {
+    const rt = t - reunion.start;
+    if (reunion.phase === 'sad') { face = 'sad'; mouth = 'frown'; squash = .09; tear = true; }
+    else if (reunion.phase === 'notice') { face = 'normal'; mouth = 'open'; jump = Math.min(1, rt / 150) * 2; }
+    else { face = 'super'; mouth = 'big'; const ph = Math.abs(Math.sin(rt / 1000 * Math.PI * 2.4)); jump = ph * 8; squash = -.07 * ph + (ph < .15 ? .08 : 0); sparkleFace = true; }
+  }
+  let rx = st.rx * (1 + squash), ry = st.ry * (1 - squash);
+  if (G.shape === 'tall') { rx *= .85; ry *= 1.12; }
+  if (G.shape === 'wide') { rx *= 1.15; ry *= .88; }
+  const cx = 32 + dx, cy = GROUND - ry - jump, top = cy - ry;
+
+  const inBody = (x, y) => {
+    let ex = (x + .5 - cx) / rx; const ey = (y + .5 - cy) / ry;
+    if (G.shape === 'pear') ex /= (.78 + .2 * (ey + 1));
+    if (G.shape === 'bean') return Math.abs(ex) ** 2.6 + Math.abs(ey) ** 2.6 <= 1;
+    return ex*ex + ey*ey <= 1;
+  };
+  const inEar = (x, y) => {
+    if (!st.ears) return 0;
+    const X = x + .5, Y = y + .5;
+    for (const s of [-1, 1]) {
+      if (G.ear === 'cat') {
+        const exc = cx + s * rx * .55, h = 3 + st.ears, yy = Y - (top - h + 2);
+        if (yy >= 0 && yy <= h && Math.abs(X - exc) <= yy * .55 + .3) return (Math.abs(X - exc) < yy * .28 && yy > 1.5) ? 3 : 2;
+      } else if (G.ear === 'bunny') {
+        const exc = cx + s * rx * .32, h = 4 + st.ears * 2, yy = Y - (top - h + 2);
+        if (yy >= 0 && yy <= h && Math.abs(X - exc) <= 1.4) return (Math.abs(X - exc) < .7 && yy > 1.2 && yy < h - 1) ? 3 : 2;
+      } else if (G.ear === 'round') {
+        const exc = cx + s * rx * .62, rr = 1.8 + st.ears * .5, ddx = X - exc, ddy = Y - (top + 1);
+        if (ddx*ddx + ddy*ddy <= rr*rr) return 2;
+      }
+    }
+    return 0;
+  };
+  const inside = (x, y) => inBody(x, y) ? 1 : inEar(x, y);
+
+  for (let x = Math.floor(cx - rx); x <= cx + rx; x++) if (Math.abs(x + .5 - cx) / rx < .9) P(x, GROUND + 1, 'rgba(0,0,0,.18)');
+  if (st.ears && G.tail !== 'none') sprite(SPR.tail[G.tail], cx + rx - 2, cy - 1 + Math.sin(t / 250) * .6, { O: pal.o, B: pal.b, L: pal.l });
+  const footC = G.pattern === 'socks' ? pal.ao : pal.o;
+  R(Math.round(cx - rx * .5) - 1, GROUND - 1, 3, 2, footC);
+  R(Math.round(cx + rx * .5) - 1, GROUND - 1, 3, 2, footC);
+  const earH = 4 + st.ears * 2;
+  const x0 = Math.floor(cx - rx - 3), x1 = Math.ceil(cx + rx + 3), y0 = Math.floor(top - earH - 2), y1 = Math.ceil(cy + ry + 1);
+  for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) {
+    const v = inside(x, y); if (!v) continue;
+    const edge = !inside(x+1, y) || !inside(x-1, y) || !inside(x, y+1) || !inside(x, y-1);
+    let c = pal.b;
+    if (edge) c = pal.o;
+    else if (v === 3) c = '#ff9fb4';
+    else if (v === 1) {
+      const ex = (x + .5 - cx) / rx, ey = (y + .5 - cy) / ry;
+      switch (G.pattern) {
+        case 'spots': for (const s of G.spots) if ((ex - s[0]) ** 2 + (ey - s[1]) ** 2 < s[2] ** 2) c = pal.a; break;
+        case 'stripes': if (G.stripeV ? (Math.floor((ex + 1) * 4) % 2 === 0 && ey < .2) : (Math.floor((ey + 1) * 4.5) % 2 === 0 && ey < .1)) c = pal.a; break;
+        case 'belly': if ((ex / .55) ** 2 + ((ey - .42) / .5) ** 2 < 1) c = '#fff6e6'; break;
+        case 'patch': if ((ex + .36) ** 2 + (ey + .1) ** 2 < .1) c = pal.a; break;
+        case 'socks': if (ey > .62) c = pal.a; break;
+      }
+      if (c === pal.b) {
+        if (ex * .8 + ey > .78) c = pal.s;
+        else if (ex < -.25 && ey < -.35 && ex*ex + ey*ey < .62) c = pal.l;
+      }
+    }
+    P(x, y, c);
+  }
+  if (G.pattern === 'stars') for (const s of G.spots) {
+    const sx = Math.round(cx + s[0] * rx * .8), sy = Math.round(cy + s[1] * ry * .8);
+    if (inBody(sx, sy)) { P(sx, sy, '#fff8b0'); if (s[2] > .22) { P(sx - 1, sy, '#fff8b0'); P(sx + 1, sy, '#fff8b0'); P(sx, sy - 1, '#fff8b0'); P(sx, sy + 1, '#fff8b0'); } }
+  }
+  if (st.ears) {
+    if (G.ear === 'horn') for (const s of [-1, 1]) { const hx = Math.round(cx + s * rx * .4); sprite(st.ears > 1 ? ['.O.', 'OAO', 'OAO', 'OAO'] : ['.O.', 'OAO', 'OAO'], hx - 1, Math.round(top) - 1 - st.ears - 2, { O: pal.ao, A: pal.a }); }
+    if (G.ear === 'antenna') for (const s of [-1, 1]) { const hx = Math.round(cx + s * 2.5), h = 2 + st.ears; R(hx, Math.round(top) - h, 1, h + 1, pal.o); R(hx - (s < 0 ? 1 : 0), Math.round(top) - h - 2, 2, 2, pal.a); }
+    if (G.ear === 'leaf') { const tx = Math.round(cx); R(tx, Math.round(top) - 2, 1, 3, '#3f7a39'); sprite(st.ears > 1 ? ['.GGG', 'GGLG', 'GG..'] : ['.GG', 'GLG'], tx, Math.round(top) - 4 - st.ears, { G: '#5fae55', L: '#9ee08f' }); }
+  }
+  const hatOn = !!S.wear.head;
+  if (S.stage === 'adult') {
+    const tx = Math.round(cx), ty = Math.round(top);
+    if (G.acc === 'sprout' && !hatOn) { R(tx, ty - 3, 1, 3, '#3f7a39'); R(tx - 2, ty - 4, 2, 2, '#62b35a'); R(tx + 1, ty - 5, 2, 2, '#7fcc6f'); }
+    if (G.acc === 'crown' && !hatOn) sprite(['Y.Y.Y', 'YYYYY', 'YRYBY'], tx - 2, ty - 2, { Y: '#ffcc33', R: '#ff4d6d', B: '#5ab4ff' });
+    if (G.acc === 'flower') sprite(['.P.', 'PYP', '.P.'], Math.round(cx + rx * .5), ty + 1, { P: pal.a, Y: '#ffe066' });
+    if (G.acc === 'halo') sprite(['.YYYYY.', 'Y.....Y', '.YYYYY.'], tx - 3, ty - 9 + Math.round(Math.sin(t / 400)), { Y: '#ffe066' });
+    if (G.acc === 'bow') sprite(['R...R', 'RRYRR', 'R...R'], Math.round(cx - rx * .6) - 2, ty + 1, { R: '#ff4d6d', Y: '#ffd0da' });
+    if (G.acc === 'star') sprite(['..Y..', '.YYY.', 'YYYYY', '.Y.Y.'], tx + Math.round(rx * .6), ty - 8 + Math.round(Math.sin(t / 350) * 1.5), { Y: '#ffe066' });
+  }
+  // 顔
+  if (!face) face = asleep ? 'sleep' : (S.hunger < 25 || S.mood < 25) ? 'sad' : 'normal';
+  if (face === 'normal' && t > nextBlink && !previewing) { face = 'blink'; if (t > nextBlink + 130) nextBlink = t + 2200 + Math.random() * 2500; }
+  if (!mouth) mouth = face === 'sad' ? 'frown' : face === 'sleep' ? 'line' : (S.mood > 70 ? 'smile' : 'line');
+  const o = pal.o, ew = G.eye === 'big' ? 3 : 2;
+  const exL = Math.round(cx - rx * G.eyeGap) - 1 - (ew - 2), exR = Math.round(cx + rx * G.eyeGap), ey = Math.round(cy - 1);
+  for (const ex of [exL, exR]) {
+    if (face === 'normal' || face === 'sad') {
+      if (G.eye === 'dot') R(ex, ey + 1, 2, 2, o);
+      else if (G.eye === 'big') { R(ex, ey, 3, 3, o); P(ex, ey, '#fff'); }
+      else if (G.eye === 'sleepy') { R(ex, ey + 1, 2, 2, o); R(ex, ey + 1, 2, 1, pal.s); }
+      else if (G.eye === 'sparkle') { R(ex, ey, 2, 3, o); P(ex, ey, '#fff'); P(ex + 1, ey + 2, '#fff'); }
+      else { R(ex, ey, 2, 3, o); P(ex, ey, '#fff'); }
+    } else if (face === 'blink' || face === 'sleep') R(ex, ey + 2, ew, 1, o);
+    else if (face === 'happy') { P(ex, ey + 1, o); P(ex + 1, ey, o); P(ex + 2, ey + 1, o); }
+    else if (face === 'super') { P(ex - 1, ey + 2, o); P(ex, ey + 1, o); P(ex + 1, ey, o); P(ex + 2, ey + 1, o); P(ex + 3, ey + 2, o); }
+  }
+  if ((face === 'sad' && Math.floor(t / 600) % 2) || tear) { P(exL, ey + 3, '#5ab4ff'); P(exL, ey + 4 + (Math.floor(t / 300) % 2), '#5ab4ff'); if (tear) P(exR + 1, ey + 4, '#5ab4ff'); }
+  if (G.cheek !== 'n' || face === 'super') {
+    const ck = face === 'super' ? '#ff6f9a' : '#' + G.cheek;
+    R(exL - 2, ey + 3, 2, 1, ck); R(exR + ew, ey + 3, 2, 1, ck);
+    if (face === 'super') { R(exL - 2, ey + 4, 2, 1, ck); R(exR + ew, ey + 4, 2, 1, ck); }
+  }
+  const mx = Math.round((exL + ew + exR) / 2) - 1, my = ey + 4;
+  if (mouth === 'big') { R(mx - 1, my, 4, 3, o); R(mx, my + 1, 2, 2, '#ff6f8f'); P(mx - 1, my, o); }
+  else if (G.mouth === 'beak') {
+    R(mx, my, 2, 1, '#ffa040');
+    if (mouth === 'open') { P(mx, my + 1, '#ff6f8f'); P(mx + 1, my + 1, '#ff6f8f'); R(mx, my + 2, 2, 1, '#e07a20'); } else R(mx, my + 1, 2, 1, '#e07a20');
+  } else if (mouth === 'open') { R(mx, my, 2, 2, o); P(mx, my + 1, '#ff6f8f'); P(mx + 1, my + 1, '#ff6f8f'); }
+  else if (mouth === 'frown') { P(mx - 1, my + 1, o); R(mx, my, 2, 1, o); P(mx + 2, my + 1, o); }
+  else if (G.mouth === 'cat') { P(mx - 1, my, o); P(mx, my + 1, o); P(mx + 1, my + 1, o); P(mx + 2, my, o); }
+  else if (G.mouth === 'fang') { R(mx, my, 2, 1, o); P(mx + 1, my + 1, '#fff'); }
+  else if (mouth === 'smile') { P(mx - 1, my, o); R(mx, my + 1, 2, 1, o); P(mx + 2, my, o); }
+  else R(mx, my, 2, 1, o);
+
+  drawWear(t, { cx, cy, rx, ry, top, exL, exR, ew, ey, inBody, st });
+
+  if (sparkleFace && Math.random() < .25) particles.push({ k: 'spark', x: cx + (Math.random() - .5) * rx * 3, y: top - 2 + Math.random() * ry, vx: 0, vy: -.01, life: 400, born: t });
+  if (anim && anim.type === 'eat') {
+    const f = FOODS[eatFood], k = Math.max(0, Math.ceil(f.spr.length * (1 - p * 1.1)));
+    sprite(f.spr.slice(f.spr.length - k), cx + rx + 2, GROUND - k, f.map);
+  }
+  if (anim && anim.type === 'listen') sprite(SPR.q, cx + rx - 1, top - 6, { X: '#3a2b3f' });
+  if (reunion && reunion.phase === 'notice') sprite(SPR.ex, cx + rx, top - 7, { X: '#ff4d4d' });
+  if (asleep && !anim && Math.random() < .012) particles.push({ k: 'z', x: cx + rx - 2, y: top - 2, vx: .05, vy: -.06, life: 1600, born: t });
+  if (!previewing) petBox = { x0: cx - rx - 3, x1: cx + rx + 3, y0: top - (st.ears ? 4 : 2), y1: GROUND + 2 };
+}
+
+// ============ きせかえの描画 ============
+function drawWear(t, g) {
+  const { cx, cy, rx, ry, top, exL, exR, ew, ey, inBody } = g;
+  const W = S.wear, X = Math.round(cx), T = Math.round(top);
+  // くび
+  const ny = Math.round(cy + ry * .6) + 1;
+  if (W.neck === 'bowtie') sprite(CLOTHES.bowtie.spr, X - 2, ny - 1, CLOTHES.bowtie.map);
+  if (W.neck === 'scarf' || W.neck === 'bell' || W.neck === 'muffler') {
+    const rows = W.neck === 'bell' ? 1 : 2;
+    for (let x = Math.floor(cx - rx - 1); x <= cx + rx + 1; x++) for (let r = 0; r < rows; r++) if (inBody(x, ny + r))
+      P(x, ny + r, W.neck === 'scarf' ? (r ? '#3f8ad0' : '#5ab4ff') : W.neck === 'bell' ? '#e04848' : (x % 2 ? '#ff6b6b' : '#fff3e0'));
+    if (W.neck === 'scarf') { R(X + 2, ny + 2, 2, 3, '#3f8ad0'); }
+    if (W.neck === 'muffler') { R(X - 4, ny + 2, 2, 3, '#ff6b6b'); P(X - 4, ny + 3, '#fff3e0'); }
+    if (W.neck === 'bell') sprite(['.Y.', 'YYY', 'YKY'], X - 1, ny + 1, { Y: '#ffd84d', K: '#7a5a00' });
+  }
+  // かお
+  if (W.face === 'roundg') {
+    const c = '#c99a2e';
+    for (const ex of [exL, exR]) { R(ex - 1, ey - 1, ew + 2, 1, c); R(ex - 1, ey + 3, ew + 2, 1, c); R(ex - 1, ey - 1, 1, 5, c); R(ex + ew, ey - 1, 1, 5, c); }
+    if (exR - 2 >= exL + ew + 1) R(exL + ew + 1, ey, exR - exL - ew - 2, 1, c);
+  }
+  if (W.face === 'sun') {
+    for (const ex of [exL, exR]) { R(ex - 1, ey, ew + 2, 3, '#1d1b22'); P(ex, ey, '#8a8aa0'); }
+    R(exL + ew, ey, Math.max(1, exR - exL - ew), 1, '#1d1b22');
+  }
+  if (W.face === 'heartg') {
+    for (const ex of [exL, exR]) sprite(['.X.X.', 'XXXXX', '.XXX.', '..X..'], ex - 1 - (ew === 3 ? 0 : .5), ey - 1, { X: '#ff5c86' });
+    R(exL + ew + 1, ey, Math.max(1, exR - exL - ew - 2), 1, '#ff5c86');
+  }
+  // あたま
+  const h = W.head; if (!h) return;
+  const C = CLOTHES[h];
+  if (h === 'straw') sprite(C.spr, X - 5, T - 2, C.map);
+  else if (h === 'knit') sprite(C.spr, X - 4, T - 2, C.map);
+  else if (h === 'witch') sprite(C.spr, X - 5, T - 4, C.map);
+  else if (h === 'silk') sprite(C.spr, X - 4, T - 4, C.map);
+  else if (h === 'tiara') sprite(C.spr, X - 3, T - 1, C.map);
+  else if (h === 'fcrown') sprite(C.spr, X - 4, T, C.map);
+  else if (h === 'shellpin') sprite(C.spr, Math.round(cx + rx * .35), T + 1, C.map);
+  else if (h === 'starpin') { sprite(C.spr, Math.round(cx + rx * .3), T - 1, C.map); if (Math.floor(t / 500) % 2) P(Math.round(cx + rx * .3) + 5, T - 2, '#fff'); }
+  else if (h === 'phones') {
+    for (let x = Math.ceil(cx - rx + 1); x <= cx + rx - 1; x++) { let y = Math.floor(top - 2); while (y < cy && !inBody(x, y)) y++; P(x, y - 1, '#3a3a48'); }
+    R(Math.round(cx - rx) - 1, Math.round(cy - ry * .45), 2, 4, '#ff5a7a'); R(Math.round(cx + rx) - 1, Math.round(cy - ry * .45), 2, 4, '#ff5a7a');
+  } else if (h === 'band') {
+    const hy = ey - 2;
+    for (let x = Math.floor(cx - rx - 1); x <= cx + rx + 1; x++) if (inBody(x, hy)) P(x, hy, '#ff4d4d');
+    let ex = Math.ceil(cx + rx); while (ex > cx && !inBody(ex, hy)) ex--;
+    P(ex + 1, hy, '#ff4d4d'); P(ex + 2, hy + 1, '#ff4d4d'); P(ex + 2, hy - 1, '#ff4d4d');
+  }
+}
+
+function drawParticles(t, dt) {
+  particles = particles.filter(q => t - q.born < q.life);
+  for (const q of particles) {
+    if (t < q.born) continue;
+    q.x += q.vx * dt; q.y += q.vy * dt; if (q.g) q.vy += q.g * dt;
+    if (q.k === 'heart') sprite(SPR.heart, q.x, q.y, { X: q.c || '#ff5c86' });
+    else if (q.k === 'z') sprite(SPR.z, q.x, q.y, { X: '#cfd8ff' });
+    else if (q.k === 'note') sprite(SPR.note, q.x, q.y, { X: '#3a2b3f' });
+    else if (q.k === 'spark') sprite(SPR.spark, q.x, q.y, { X: '#fff8b0' });
+    else if (q.k === 'item') sprite(q.rows, q.x, q.y, q.map);
+    else if (q.k === 'txt') { ctx.fillStyle = q.c; ctx.font = '6px sans-serif'; ctx.fillText(q.s, q.x, q.y); }
+    else P(q.x, q.y, q.c);
+  }
+}
+
+// ============ おやつキャッチ ============
+function drawMG() {
+  for (const it of mg.items) {
+    if (it.k === 'fruit') sprite(SPR.fruit, it.x, it.y, { G: '#4f9a47', C: it.c });
+    else if (it.k === 'star') sprite(SPR.star, it.x, it.y, { Y: '#ffe066' });
+    else sprite(SPR.rock, it.x, it.y, { K: '#4a4a55', G: '#8d8d9a' });
+  }
+}
+function updateMG(t, dt) {
+  const el = t - mg.start;
+  if (el >= mg.dur) { endMG(); return; }
+  if (t > mg.stun) { const d = mg.target - mg.x; mg.x += Math.sign(d) * Math.min(Math.abs(d), .075 * dt); mg.x = clamp(mg.x, 9, 55); }
+  const pr = el / mg.dur;
+  if (t - mg.lastSpawn > 650 - 330 * pr) {
+    mg.lastSpawn = t; const r = Math.random();
+    mg.items.push({ k: r < .14 + .1 * pr ? 'rock' : r < .26 ? 'star' : 'fruit', x: 4 + Math.random() * 55, y: -4, vy: .014 + Math.random() * .01 + pr * .016, c: pick(FRUITC) });
+  }
+  for (const it of mg.items) it.y += it.vy * dt;
+  mg.items = mg.items.filter(it => {
+    if (it.y > 64) return false;
+    if (it.y + 3 >= petBox.y0 + 2 && it.y <= GROUND - 2 && it.x + 2 >= petBox.x0 + 3 && it.x <= petBox.x1 - 3) {
+      if (it.k === 'rock') { mg.stun = t + 900; blip(160, .15, .06, 'sawtooth'); buzz(); }
+      else {
+        const v = it.k === 'star' ? 3 : 1; mg.score += v; mg.happy = t + 250;
+        blip(it.k === 'star' ? 1300 : 900 + mg.score * 8, .06, .04, 'triangle');
+        particles.push({ k: 'txt', s: '+' + v, c: '#fff', x: it.x, y: it.y, vx: 0, vy: -.02, life: 600, born: t });
+      }
+      return false;
+    }
+    return true;
+  });
+  $('#hudL').textContent = `のこり ${Math.ceil((mg.dur - el) / 1000)}秒`;
+  $('#hudR').textContent = `${mg.score}こ`;
+}
+function startMG() {
+  closeModal(); wake();
+  if (S.hunger < 15) { startAnim('listen', 800); say('（おなかがすいて うごけないみたい…）'); return; }
+  bubble.classList.remove('show');
+  mg = { start: performance.now() + 1200, dur: 30000, x: 32, target: 32, items: [], score: 0, stun: 0, happy: 0, lastSpawn: 0 };
+  $('#hud').classList.add('show'); $('#hudL').textContent = 'よーい…'; $('#hudR').textContent = 'ゆびで左右にうごかそう';
+  setUIBusy(true);
+}
+function endMG() {
+  const sc = mg.score; mg = null;
+  $('#hud').classList.remove('show'); setUIBusy(false);
+  const best = sc > S.mgBest; if (best) S.mgBest = sc;
+  S.coins += sc;
+  let stat = '';
+  if (S.today.play < 5) { S.today.play++; S.mood = clamp(S.mood + 20); S.hunger = clamp(S.hunger - 8); S.affection += 3; stat = 'ごきげん アップ！'; }
+  else { S.mood = clamp(S.mood + 5); stat = '（きょうはたくさんあそんだので、すこしだけ ごきげんアップ）'; }
+  save(); updateUI(); jingle(); notes();
+  prog('play'); prog('score', sc, true);
+  openModal(`
+    <h2>おやつキャッチ おしまい！</h2>
+    <p style="font-size:22px;text-align:center;margin:12px 0">${sc}こ キャッチ ${best ? '<br><span style="font-size:14px;color:#e0a000">★ じこベスト！</span>' : ''}</p>
+    <p style="text-align:center">コイン +${sc} ／ ベスト ${S.mgBest}こ</p>
+    <p style="text-align:center">${stat}</p>
+    <div class="row"><button class="btn" id="mgOk">やったね</button></div>`);
+  $('#mgOk').onclick = () => { closeModal(); if (!checkGrowth() && !checkName()) say(talk('play')); };
+}
+
+// ============ おでかけ ============
+function openPlay() {
+  if (busy()) return;
+  const left = Math.max(0, 3 - S.today.trip);
+  const placeCard = k => { const p = PLACES[k], ok = p.ok(); return `
+    <button class="place" data-place="${k}" ${ok ? '' : 'disabled'}><canvas width="64" height="48" data-pv="${k}"></canvas>
+      <span class="nm">${ok ? p.name : '？？？'}<small>${ok ? 'たからものが見つかるかも' : p.lock}</small></span></button>`; };
+  openModal(`
+    <h2>なにしてあそぶ？</h2>
+    <h3>おうちで</h3>
+    <button class="place" id="pCatch"><canvas width="64" height="48" data-pv="room"></canvas><span class="nm">おやつキャッチ<small>30秒でたくさんキャッチ！ コインがもらえる</small></span></button>
+    <h3>おでかけ（きょう ごほうびあり あと${left}回）</h3>
+    ${Object.keys(PLACES).map(placeCard).join('')}
+    <div class="row"><button class="btn sub" id="plClose">やめる</button></div>`);
+  card.querySelectorAll('canvas[data-pv]').forEach(c => { const k = c.dataset.pv; withCtx(c.getContext('2d'), () => { const t = performance.now(); if (k === 'room') drawRoom(t); else drawPlace(k, t); }); });
+  $('#pCatch').onclick = startMG;
+  card.querySelectorAll('[data-place]').forEach(b => b.onclick = () => startTrip(b.dataset.place));
+  $('#plClose').onclick = closeModal;
+}
+function startTrip(place) {
+  closeModal(); wake();
+  if (S.hunger < 15) { startAnim('listen', 800); say('（おなかがすいて おでかけできないみたい…）'); return; }
+  flash = 1.2; blip(700, .1, .04, 'triangle');
+  const t = performance.now();
+  trip = { place, x: 14, target: 14, spots: [], finds: [], max: 3, nextSpawn: t + 900, digUntil: 0, dig: null, happy: 0, wanderAt: t + 1500, ending: false, moving: false, talkAt: t + 6000 };
+  $('#hud').classList.add('show'); $('#tripBack').classList.add('show');
+  setUIBusy(true); updateTripHud();
+  setTimeout(() => { if (!trip) return; const pn = callName(); say(`${PLACES[place].hello}\n（${S.stage === 'adult' && pn ? pn + 'といっしょで うれしそう' : 'わくわくしている'}）`); toast('キラキラをタップすると さがしにいくよ'); }, 800);
+}
+function updateTripHud() { if (!trip) return; $('#hudL').textContent = PLACES[trip.place].name; $('#hudR').textContent = `みつけた ${trip.finds.length}/${trip.max}`; }
+function drawTrip(t) {
+  for (const s of trip.spots) {
+    const tw = Math.floor((t - s.born) / 200) % 3;
+    if (tw === 0) sprite(SPR.spark, s.x - 1, GROUND - 2, { X: '#fffbd0' }); else if (tw === 1) P(s.x, GROUND - 1, '#ffffff');
+    else { P(s.x - 1, GROUND - 1, '#fff6a0'); P(s.x + 1, GROUND - 1, '#fff6a0'); }
+  }
+  if (trip.digUntil > t && Math.random() < .4) particles.push({ k: 'd', c: trip.place === 'beach' ? '#e0c088' : trip.place === 'hill' ? '#2f5a46' : '#8a5a3a', x: trip.x + (Math.random() - .5) * 6, y: GROUND, vx: (Math.random() - .5) * .04, vy: -.04, g: .00012, life: 500, born: t });
+}
+function updateTrip(t, dt) {
+  if (!trip.ending && trip.finds.length + (trip.dig ? 1 : 0) < trip.max && trip.spots.length < 2 && t > trip.nextSpawn) {
+    trip.spots.push({ x: 7 + Math.random() * 50, born: t }); trip.nextSpawn = t + 1400 + Math.random() * 1800;
+  }
+  trip.spots = trip.spots.filter(s => t - s.born < 9000 || s === trip.dig);
+  if (trip.digUntil) {
+    if (t >= trip.digUntil) { const s = trip.dig; trip.digUntil = 0; trip.dig = null; trip.spots = trip.spots.filter(x => x !== s); doFind(t); }
+    return;
+  }
+  if (trip.dig && Math.abs(trip.x - trip.dig.x) < 1.5) { trip.digUntil = t + 900; blip(300, .05, .03); return; }
+  if (!trip.dig && t > trip.wanderAt && Math.abs(trip.target - trip.x) < 1) { trip.target = 10 + Math.random() * 44; trip.wanderAt = t + 2200 + Math.random() * 2500; }
+  const d = trip.target - trip.x, sp = trip.dig ? .05 : .022;
+  trip.moving = Math.abs(d) > .5;
+  trip.x += Math.sign(d) * Math.min(Math.abs(d), sp * dt);
+  if (!trip.ending && t > trip.talkAt) { trip.talkAt = t + 7000 + Math.random() * 5000; if (Math.random() < .5) say(talk('play')); }
+}
+function rollFind() {
+  const pl = trip.place, r = Math.random();
+  const rareC = Object.keys(CLOTHES).find(k => CLOTHES[k].rare === pl);
+  if (rareC && !S.clothes[rareC] && r < .06) return { kind: 'cloth', id: rareC };
+  if (r < .2) return { kind: 'coin', n: 3 + Math.floor(Math.random() * 8) };
+  const list = TREAS[pl], w = list.map(x => x.rare ? 1 : 5), sum = w.reduce((a, b) => a + b, 0);
+  let k = Math.random() * sum; for (let i = 0; i < list.length; i++) { k -= w[i]; if (k <= 0) return { kind: 'treasure', id: list[i].id }; }
+  return { kind: 'treasure', id: list[0].id };
+}
+function doFind(t) {
+  const f = rollFind(); trip.finds.push(f); trip.happy = t + 700; prog('find');
+  let msg = '';
+  if (f.kind === 'coin') { S.coins += f.n; msg = `コインを${f.n}まい みつけた！`; particles.push({ k: 'item', rows: ['.YY.', 'YWYY', 'YYYY', '.YY.'], map: { Y: '#ffd84d', W: '#fff6c4' }, x: trip.x - 2, y: GROUND - 18, vx: 0, vy: -.008, life: 1500, born: t }); blip(1400, .06); }
+  else if (f.kind === 'cloth') {
+    const c = CLOTHES[f.id]; S.clothes[f.id] = true; msg = `${c.name}を みつけた！`;
+    particles.push({ k: 'item', rows: c.spr || c.icon, map: c.map || c.imap, x: trip.x - 4, y: GROUND - 20, vx: 0, vy: -.008, life: 1800, born: t });
+    confetti(); jingle(); toast(`レアなきせかえ「${c.name}」をゲット！`); diary(`${PLACES[trip.place].name}で ${c.name}を見つけた`);
+  } else {
+    const tr = TBY[f.id], first = !S.treasures[f.id];
+    S.treasures[f.id] = (S.treasures[f.id] || 0) + 1;
+    msg = `${tr.name}を みつけた！${first ? '（はじめて！）' : ''}`;
+    particles.push({ k: 'item', rows: TPL[tr.tpl], map: tr.map, x: trip.x - 2, y: GROUND - 18, vx: 0, vy: -.008, life: 1500, born: t });
+    if (tr.rare) { confetti(); jingle(); } else blip(1100, .08, .04, 'triangle');
+    if (first) diary(`${PLACES[trip.place].name}で「${tr.name}」をはじめて見つけた${tr.rare ? '（レア！）' : ''}`);
+    if (first && TREAS[trip.place].every(x => S.treasures[x.id])) { S.coins += 50; toast(`${PLACES[trip.place].name}のたからもの コンプリート！ コイン+50`); diary(`${PLACES[trip.place].name}のたからものを ぜんぶ集めた！`); }
+  }
+  say(`（${msg}）`); save(); updateUI(); updateTripHud();
+  if (trip.finds.length >= trip.max) {
+    trip.ending = true; trip.spots = [];
+    setTimeout(() => { if (trip) say('（たのしかったね！ そろそろ かえろう）'); }, 2200);
+    setTimeout(endTrip, 4400);
+  }
+}
+function endTrip() {
+  if (!trip) return;
+  const T = trip; trip = null; flash = 1;
+  $('#hud').classList.remove('show'); $('#tripBack').classList.remove('show'); bubble.classList.remove('show');
+  setUIBusy(false);
+  let stat;
+  if (S.today.trip < 3) { S.today.trip++; S.mood = clamp(S.mood + 25); S.hunger = clamp(S.hunger - 10); S.affection += 4; stat = 'ごきげん・なかよし アップ！'; }
+  else { S.mood = clamp(S.mood + 5); stat = '（きょうは たくさんおでかけしたね）'; }
+  S.trips++; save(); updateUI(); prog('trip');
+  const rows = T.finds.map(f => {
+    if (f.kind === 'coin') return `<div class="item"><canvas width="8" height="6" data-ic="coin"></canvas><div class="nm">コイン ${f.n}まい</div></div>`;
+    if (f.kind === 'cloth') return `<div class="item"><canvas width="12" height="8" data-cl="${f.id}"></canvas><div class="nm">${CLOTHES[f.id].name}<small>レアなきせかえ！</small></div></div>`;
+    return `<div class="item"><canvas width="8" height="6" data-tr="${f.id}"></canvas><div class="nm">${TBY[f.id].name}<small>${TBY[f.id].rare ? 'レア！' : ''}</small></div></div>`;
+  }).join('');
+  openModal(`
+    <h2>${PLACES[T.place].name}から ただいま！</h2>
+    ${rows || '<p>きょうは なにも見つからなかった。でも たのしかった！</p>'}
+    <p style="text-align:center">${stat}</p>
+    <div class="row"><button class="btn" id="tOk">おかえり</button></div>`);
+  paintIcons();
+  $('#tOk').onclick = () => { closeModal(); startAnim('jump', 600); if (!checkGrowth() && !checkName()) say(talk('greet')); };
+}
+
+// ============ メインループ ============
+let lastT = performance.now();
+function drawScene(t, dt) {
+  ctx.clearRect(0, 0, 64, 64);
+  if (trip) drawPlace(trip.place, t); else drawRoom(t);
+  if (S.stage === 'egg') drawEgg(t); else drawPet(t);
+  if (mg) drawMG();
+  if (trip) drawTrip(t);
+  drawParticles(t, dt);
+}
+function frame(t) {
+  const dt = Math.min(50, t - lastT); lastT = t;
+  if (anim && t - anim.start > anim.dur) anim = null;
+  const paused = modal.classList.contains('show');
+  if (mg && t >= mg.start) updateMG(t, dt);
+  if (trip && !paused) updateTrip(t, dt);
+  drawScene(t, dt);
+  if (flash > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(1, flash)})`; ctx.fillRect(0, 0, 64, 64); flash -= dt / 700; }
+  requestAnimationFrame(frame);
+}
+
+// ============ エフェクト・音 ============
+function hearts(n = 2, c) { const t = performance.now(); for (let i = 0; i < n; i++) particles.push({ k: 'heart', c, x: (petBox.x0 + petBox.x1) / 2 - 4 + Math.random() * 6 + (n > 4 ? (Math.random() - .5) * 24 : 0), y: petBox.y0 + (n > 4 ? Math.random() * 6 : 0), vx: (Math.random() - .5) * .02, vy: -.025 - Math.random() * .015, life: 1200, born: t + (n > 4 ? i * 60 : 0) }); }
+function confetti() { const t = performance.now(), cols = ['#ff5c86', '#ffd36e', '#7fd0ff', '#9be38b', '#c9a6ff']; for (let i = 0; i < 70; i++) particles.push({ k: 'c', c: pick(cols), x: Math.random() * 64, y: -Math.random() * 20, vx: (Math.random() - .5) * .02, vy: .02 + Math.random() * .03, life: 3000, born: t }); }
+function notes() { const t = performance.now(); for (let i = 0; i < 3; i++) particles.push({ k: 'note', x: 24 + i * 7, y: petBox.y0 - 2, vx: 0, vy: -.02, life: 900, born: t + i * 120 }); }
+
+let AC = null;
+function blip(f, len = .07, vol = .04, type = 'square') {
+  if (!S.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(vol, AC.currentTime); g.gain.exponentialRampToValueAtTime(.0001, AC.currentTime + len);
+    o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime + len + .02);
+  } catch (e) {}
+}
+function jingle() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => blip(f, .15, .05, 'triangle'), i * 110)); }
+function joyJingle() { [523, 659, 784, 659, 784, 1047, 1319, 1568].forEach((f, i) => setTimeout(() => blip(f, .18, .05, 'triangle'), i * 120)); }
+function sadTone() { [392, 349, 330].forEach((f, i) => setTimeout(() => blip(f, .3, .03, 'triangle'), i * 260)); }
+function buzz(ms = 12) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+
+// ============ ふきだし・トースト ============
+const bubble = $('#bubble');
+let sayTimer = null, typeTimer = null;
+function say(text) {
+  if (mg) return;
+  clearTimeout(sayTimer); clearInterval(typeTimer);
+  const cs = chars(text); let i = 0, inParen = false;
+  bubble.classList.add('show');
+  const render = n => { bubble.innerHTML = esc(cs.slice(0, n).join('')).replace(/（[^）]*）?/g, m => `<span class="narr">${m}</span>`) || '&nbsp;'; };
+  render(0);
+  typeTimer = setInterval(() => {
+    const c = cs[i];
+    if (c === '（') inParen = true;
+    if (!inParen && c && !/[\s…、。！？!?〜ー]/.test(c)) blip(G.voice + (c.charCodeAt(0) % 7) * 40);
+    if (c === '）') inParen = false;
+    i++; render(i);
+    if (i >= cs.length) { clearInterval(typeTimer); sayTimer = setTimeout(() => bubble.classList.remove('show'), 2200 + cs.length * 90); }
+  }, 60);
+}
+const toastEl = $('#toast'), toastQ = []; let toasting = false;
+function toast(msg) { toastQ.push(msg); if (!toasting) nextToast(); }
+function nextToast() {
+  const m = toastQ.shift(); if (!m) { toasting = false; return; }
+  toasting = true; toastEl.textContent = m; toastEl.classList.add('show');
+  setTimeout(() => { toastEl.classList.remove('show'); setTimeout(nextToast, 350); }, 2300);
+}
+
+// ============ ことば ============
+const CTX = {
+  eat: ['ごはん', 'おいしい', 'まんま', 'うまい', 'もぐもぐ', 'いただきます', 'ごちそうさま'],
+  play: ['あそぼ', 'あそぶ', 'たのしい', 'ボール', 'やった', 'わーい', 'おでかけ', 'さんぽ'],
+  pet: ['すき', 'だいすき', 'なでなで', 'うれしい', 'かわいい', 'いいこ'],
+  greet: ['おはよう', 'こんにちは', 'おかえり', 'ただいま', 'やっほー', 'こんばんは', 'あいたかった'],
+  sleep: ['おやすみ', 'ねむい', 'ねる'],
+  wear: ['かわいい', 'にあう', 'すてき', 'かっこいい', 'おしゃれ'],
+};
+const learned = () => S.words.filter(w => w.learned).map(w => w.t);
+const need = () => S.stage === 'baby' ? 3 : 2;
+function ctxWord(k) { const L = learned().filter(t => CTX[k].some(c => t.includes(c))); return L.length ? pick(L) : null; }
+const babble = () => pick(['ぴ！', 'ぴぃ〜', 'ぷぅ', 'きゅ？', 'ぴぴっ', 'ぴゃ！']);
+const callName = () => S.nameLevel >= 2 ? S.player : null;
+
+function talk(context) {
+  const L = learned(), pn = callName();
+  if (context) {
+    const c = ctxWord(context);
+    if (c && Math.random() < .75) return (S.stage !== 'baby' && pn && Math.random() < .4) ? `${pn}、${c}！` : `${c}！`;
+  }
+  const half = S.words.filter(w => !w.learned && w.lastDay !== dayStr(now()));
+  if (half.length && Math.random() < .15) { const w = pick(half); const p = chars(w.t).slice(0, Math.ceil(chars(w.t).length / 2)).join(''); return `${p}…？\n（なにか思いだそうとしている）`; }
+  const pool = [babble, babble];
+  if (L.length) pool.push(() => pick(L) + '！', () => pick(L) + '！');
+  if (pn) pool.push(() => pn + '！');
+  if (S.stage !== 'baby') {
+    if (pn && L.length) pool.push(() => `${pn}、${pick(L)}！`);
+    if (L.length >= 2) pool.push(() => { const a = pick(L); let b = pick(L); if (b === a) b = pick(L); return `${a}…${b}？`; });
+  }
+  if (S.stage === 'adult' && L.length) {
+    pool.push(() => `${pick(L)}、すき`, () => `もっと${pick(L)}！`);
+    if (pn) pool.push(() => `${pn}といっしょ！`, () => `${pn}、${pick(L)}、すき！`);
+  }
+  if (pool.length > 4) pool.splice(0, 1);
+  return pick(pool)();
+}
+
+function checkName() {
+  if (S.stage === 'egg' || !S.player) return false;
+  const m = chars(S.player)[0];
+  if (S.nameLevel === 0 && S.days >= 2 && S.affection >= 15) {
+    S.nameLevel = 1; save(); startAnim('listen', 1400);
+    setTimeout(() => say(`${m}…？ ${m}…${m}…？`), 300);
+    diary(`はじめて「${m}…」って言おうとした`);
+    return true;
+  }
+  if (S.nameLevel === 1 && S.days >= 3 && S.affection >= 30) {
+    S.nameLevel = 2; save(); startAnim('jump', 700); confetti(); jingle();
+    setTimeout(() => say(`${S.player}！`), 300);
+    toast(`${S.pet}が名前をよんでくれた！`);
+    diary(`はじめて名前をよんでくれた！「${S.player}」`);
+    return true;
+  }
+  return false;
+}
+function checkGrowth() {
+  let grew = null;
+  if (S.stage === 'baby' && S.days >= 3 && S.affection >= 20) { S.stage = 'child'; grew = `すこし大きくなって、${EARN[G.ear]}がはえた！${G.tail !== 'none' ? 'しっぽも！' : ''}`; }
+  else if (S.stage === 'child' && S.days >= 7 && S.affection >= 60) { S.stage = 'adult'; grew = `おとなになった！ ${ACCN[G.acc]}がついた。文でしゃべれるようになった`; }
+  if (grew) {
+    save(); flash = 1.2; startAnim('grow', 1400); confetti(); jingle();
+    diary(grew); setTimeout(() => say(`（${grew}）`), 900); updateUI();
+    if (S.stage === 'child') setTimeout(() => toast('おでかけ先に「うみ」がふえた！'), 2500);
+    if (S.stage === 'adult') setTimeout(() => toast('おでかけ先に「ほしのおか」がふえた！'), 2500);
+    return true;
+  }
+  return false;
+}
+
+// ============ おねがい進行 ============
+function prog(type, v = 1, isMax = false) {
+  const T = S.today; if (!T || !T.missions || S.stage === 'egg') return;
+  T.m[type] = isMax ? Math.max(T.m[type] || 0, v) : (T.m[type] || 0) + v;
+  if (T.missions.includes(type) && !T.done.includes(type) && T.m[type] >= MIS[type].n) {
+    T.done.push(type); S.coins += 10;
+    toast(`おねがい達成！「${MIS[type].label}」 コイン+10`);
+    if (T.done.length === T.missions.length) { S.coins += 20; toast('きょうのおねがい ぜんぶ達成！ ボーナス+20'); confetti(); }
+  }
+  save(); updateUI();
+}
+
+// ============ 時間経過 ============
+function applyDecay() {
+  if (S.stage === 'egg') { S.lastTick = now(); return; }
+  const n = now(); let m = (n - S.lastTick) / 60000;
+  if (m > 0) {
+    m = Math.min(m, 60 * 24 * 3);
+    S.hunger = clamp(S.hunger - m * .08);
+    S.mood = clamp(S.mood - m * (S.hunger < 30 ? .12 : .04));
+  }
+  S.lastTick = n;
+}
+let awayDays = 0, newDay = false;
+function dayCheck() {
+  if (S.stage === 'egg' || !S.lastDay) return false;
+  const t = dayStr(now());
+  if (S.lastDay === t) return false;
+  const gap = daysBetween(S.lastDay, t);
+  S.streak = gap === 1 ? S.streak + 1 : 1;
+  awayDays = gap - 1;
+  S.days += 1; S.lastDay = t;
+  S.today = newToday(t);
+  S.affection += 5; S.coins += 10;
+  if (S.streak > 0 && S.streak % 7 === 0) { diary(`${S.streak}日れんぞくで会いにきた`); S.coins += 30; }
+  newDay = true; save();
+  return true;
+}
+
+// ============ 再会（しばらく会えなかったとき） ============
+function playReunion(days) {
+  const pn = callName(), t0 = performance.now();
+  anim = null; reunion = { phase: 'sad', start: t0 };
+  S.mood = Math.min(S.mood, 15); updateUI();
+  sadTone();
+  say(days >= 7 ? `（${days}日間… ずっと まどの外を見ていたみたい）` : `（${days}日間… ずっと まってたみたい）`);
+  setTimeout(() => { reunion = { phase: 'notice', start: performance.now() }; blip(900, .12, .05); bubble.classList.remove('show'); }, 2600);
+  setTimeout(() => {
+    reunion = { phase: 'joy', start: performance.now() };
+    flash = .6; joyJingle(); confetti(); buzz([20, 60, 20, 60, 40]);
+    const greetW = ctxWord('greet');
+    let line;
+    if (pn && S.stage === 'adult') line = `${pn}！！ ${pn}！！\n${greetW ? greetW + '！！ ' : ''}あいたかった！！`;
+    else if (pn) line = `${pn}！！ ${pn}ーー！！${greetW ? '\n' + greetW + '！！' : ''}`;
+    else line = `ぴぃぃぃーーっ！！\n（とびきりの笑顔で とびついてきた！）`;
+    say(line + (days >= 7 ? '\n（なみだが うれしなみだに かわった）' : ''));
+    let n = 0; const iv = setInterval(() => { hearts(6, n % 2 ? '#ff8fc0' : '#ff5c86'); if (++n > 6) clearInterval(iv); }, 450);
+    S.mood = 100; S.affection += Math.min(10, days * 2); S.reunions++;
+    updateUI(); save();
+    diary(`${days}日ぶりに会えた。とびきりの笑顔で むかえてくれた`);
+  }, 3500);
+  setTimeout(() => { reunion = null; checkGrowth() || checkName(); }, 8200);
+}
+
+function greet() {
+  if (S.stage === 'egg' || !S.player) return;
+  if (newDay) { toast(`いっしょに ${S.days}日目 ／ ログインボーナス コイン+10`); if (S.streak % 7 === 0) toast(`${S.streak}日れんぞく！ コイン+30`); }
+  const away = awayDays; awayDays = 0;
+  if (newDay && away >= 2) { newDay = false; setTimeout(() => playReunion(away), 500); return; }
+  setTimeout(() => {
+    if (checkGrowth()) return;
+    if (checkName()) return;
+    if (isNight() && Date.now() > awakeUntil) { say('（すやすや ねている…）'); return; }
+    const pn = callName(), c = ctxWord('greet');
+    let s;
+    if (away === 1) s = `${pn ? pn + '！' : babble()}\n（きのうは あえなくて ちょっとさみしかったみたい）`;
+    else if (pn) s = `${pn}！${c ? c + '！' : ''}`;
+    else s = c ? `${c}！` : `${babble()}\n（うれしそうに はねている）`;
+    startAnim('jump', 600); say(s);
+  }, newDay ? 1400 : 500);
+  newDay = false;
+}
+
+// ============ UI ============
+function updateUI() {
+  const st = STAGES[S.stage], egg = S.stage === 'egg';
+  $('#petName').textContent = egg ? 'ふしぎなたまご' : S.pet;
+  $('#stageLabel').textContent = egg ? 'たまご' : st.label;
+  $('#dayInfo').innerHTML = egg ? 'タップしてみて' : `いっしょに${S.days}日<br>れんぞく${S.streak}日`;
+  $('#b-hunger i').style.width = S.hunger + '%';
+  $('#b-mood i').style.width = S.mood + '%';
+  $('#loveLabel').textContent = `なかよし${Math.floor(S.affection / 10) + 1}`;
+  $('#b-love i').style.width = (S.affection % 10) * 10 + '%';
+  $('#coins').textContent = S.coins;
+  const T = S.today; $('#mStars').textContent = T.missions.map(k => T.done.includes(k) ? '★' : '☆').join('');
+  setUIBusy(!!(mg || trip));
+}
+function setUIBusy(b) {
+  const egg = S.stage === 'egg';
+  ['#aFeed', '#aPlay', '#aTeach', '#aWear', '#aShop', '#aPhoto', '#aTreasure', '#aNote', '#mBtn', '#btnSettings'].forEach(id => {
+    let dis = b || (egg && id !== '#btnSettings');
+    if (id === '#aPhoto' && trip && !egg) dis = false;   // おでかけ中もしゃしんはOK
+    $(id).disabled = dis;
+  });
+}
+const busy = () => mg || trip || reunion || (anim && ['eat', 'grow'].includes(anim.type));
+function wake() { if (isNight() && Date.now() > awakeUntil) { awakeUntil = Date.now() + 3 * 60000; return true; } return false; }
+const toLogical = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * 64, y: (e.clientY - r.top) / r.height * 64 }; };
+
+function onCanvasTap(e) {
+  const { x: lx, y: ly } = toLogical(e);
+  if (mg) { mg.target = lx; return; }
+  if (reunion) return;
+  const hit = lx >= petBox.x0 && lx <= petBox.x1 && ly >= petBox.y0 && ly <= petBox.y1;
+  if (trip) {
+    if (trip.ending || trip.digUntil) return;
+    const s = trip.spots.find(s => Math.abs(lx - s.x) < 5 && ly > GROUND - 10);
+    if (s) { trip.dig = s; trip.target = s.x; blip(800, .04, .03); return; }
+    if (hit) { hearts(); trip.happy = performance.now() + 500; S.mood = clamp(S.mood + 2); if (Math.random() < .5) say(talk('play')); return; }
+    if (!trip.dig) { trip.target = clamp(lx, 8, 56); trip.wanderAt = performance.now() + 3000; }
+    return;
+  }
+  if (!hit) return;
+  buzz();
+  if (S.stage === 'egg') {
+    S.eggTaps++; startAnim('wobble', 450); blip(300 + S.eggTaps * 80, .08, .05, 'triangle');
+    if (S.eggTaps >= 5) {
+      flash = 1.5; jingle();
+      const wait = new Promise(r => setTimeout(r, 900));
+      Promise.all([ensureUnique(), wait]).then(() => { S.stage = 'baby'; save(); updateUI(); openNaming(); });
+    } else save();
+    return;
+  }
+  if (busy()) return;
+  if (wake()) { startAnim('listen', 900); say('…ん…？\n（ねむそう）'); return; }
+  hearts();
+  if (S.today.pets < 15) { S.affection += 1; S.today.pets++; }
+  S.mood = clamp(S.mood + 3);
+  startAnim('jump', 500);
+  save(); updateUI(); prog('pet');
+  if (checkGrowth() || checkName()) return;
+  if (Math.random() < .55) say(talk('pet')); else blip(G.voice + 200, .06);
+}
+
+// ============ ごはん ============
+function openFeed() {
+  if (busy()) return;
+  const owned = Object.keys(FOODS).filter(k => k === 'onigiri' || S.inv[k] > 0);
+  if (owned.length === 1) { feed('onigiri'); return; }
+  openModal(`<h2>なにをあげる？</h2>${owned.map(k => `
+    <div class="item"><canvas width="6" height="6" data-food="${k}"></canvas>
+      <div class="nm">${FOODS[k].name}<small>${k === 'onigiri' ? 'いつでもタダ' : 'のこり ' + S.inv[k] + 'こ'}</small></div>
+      <button data-give="${k}">あげる</button></div>`).join('')}
+    <div class="row"><button class="btn sub" id="fClose">やめる</button></div>`);
+  paintIcons();
+  card.querySelectorAll('[data-give]').forEach(b => b.onclick = () => { closeModal(); feed(b.dataset.give); });
+  $('#fClose').onclick = closeModal;
+}
+function feed(kind) {
+  wake();
+  if (S.hunger > 90 && kind === 'onigiri') { startAnim('listen', 800); say(`${babble()}\n（ぷいっ。おなかいっぱいみたい）`); return; }
+  if (S.hunger > 97) { startAnim('listen', 800); say(`${babble()}\n（もうはいらないみたい）`); return; }
+  const f = FOODS[kind];
+  if (kind !== 'onigiri') S.inv[kind]--;
+  S.hunger = clamp(S.hunger + f.h); S.mood = clamp(S.mood + f.m); S.affection += f.a;
+  eatFood = kind; startAnim('eat', 1800); save(); updateUI(); prog('feed');
+  setTimeout(() => {
+    hearts(kind === 'cake' ? 5 : 3);
+    if (!checkGrowth() && !checkName()) say(talk('eat') + (kind === 'cake' ? '\n（とってもしあわせそう！）' : ''));
+  }, 1850);
+}
+
+// ============ モーダル ============
+const modal = $('#modal'), card = $('#card');
+let onModalClose = null;
+function openModal(html, closable = true) {
+  card.innerHTML = html; modal.classList.add('show');
+  modal.onclick = closable ? (e => { if (e.target === modal) closeModal(); }) : null;
+}
+function closeModal() { modal.classList.remove('show'); const f = onModalClose; onModalClose = null; if (f) f(); }
+function iconOf(id) {
+  const c = CLOTHES[id]; return { rows: c.spr || c.icon, map: c.map || c.imap };
+}
+function paintCenter(c, rows, map) {
+  const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height);
+  const w = Math.max(...rows.map(r => r.length)), h = rows.length;
+  sprite(rows, Math.floor((c.width - w) / 2), Math.floor((c.height - h) / 2), map, g);
+}
+function paintIcons() {
+  card.querySelectorAll('canvas[data-food]').forEach(c => { const f = FOODS[c.dataset.food]; paintCenter(c, f.spr, f.map); });
+  card.querySelectorAll('canvas[data-cl]').forEach(c => { const ic = iconOf(c.dataset.cl); paintCenter(c, ic.rows, ic.map); });
+  card.querySelectorAll('canvas[data-tr]').forEach(c => { const tr = TBY[c.dataset.tr]; paintCenter(c, TPL[tr.tpl], c.dataset.no ? Object.fromEntries(Object.keys(tr.map).map(k => [k, '#b9aebd'])) : tr.map); });
+  card.querySelectorAll('canvas[data-ic="coin"]').forEach(c => paintCenter(c, ['.YY.', 'YWYY', 'YYYY', '.YY.'], { Y: '#ffd84d', W: '#fff6c4' }));
+  card.querySelectorAll('canvas[data-furn]').forEach(c => { const k = c.dataset.furn;
+    const m = { poster: [['KKKKKK', 'KWWWWK', 'KWBBWK', 'KWBBWK', 'KWWWWK', 'KKKKKK'], { K: '#5a4a3f', W: '#fffaf0', B: G.pal.b }],
+      cushion: [['.CCCC.', 'CDCCDC', 'CCCCCC', '.DDDD.'], { C: G.pal.a, D: G.pal.ao }],
+      lamp: [['..K..', '..Y..', '.YYY.', 'YYYYY', '.YYY.', '.Y.Y.'], { K: '#3a2b3f', Y: '#ffd84d' }],
+      rug: [['.BWBW.', 'BWBWBW', 'BWBWBW', '.BWBW.'], { B: '#4f86c6', W: '#e6f4ff' }] }[k];
+    paintCenter(c, m[0], m[1]); });
+}
+
+function openNaming() {
+  openModal(`
+    <h2>たまごがかえった！</h2>
+    <p>せかいに 1ぴきだけの いきものが こっちを見ている。<br>名前をきめてあげよう。</p>
+    <div class="idbox">No.${fmtId(S.seed)}</div>
+    <form id="fName">
+      <label>この子の名前</label><input id="iPet" maxlength="8" placeholder="例：ぴこ" autocomplete="off">
+      <label>あなたの名前（ひらがながおすすめ）</label><input id="iPlayer" maxlength="8" placeholder="例：たろう" autocomplete="off">
+      <div class="err" id="nErr"></div>
+      <div class="row"><button class="btn" type="submit">きめた！</button></div>
+    </form>
+    <p style="opacity:.7">※ この子は、すこしずつ あなたの名前を覚えていきます。耳やしっぽは、育ててのおたのしみ。</p>`, false);
+  $('#fName').onsubmit = e => {
+    e.preventDefault();
+    const pet = $('#iPet').value.trim().replace(/\s+/g, ''), player = $('#iPlayer').value.trim().replace(/\s+/g, '');
+    if (!pet || !player) { $('#nErr').textContent = 'ふたつとも入れてね'; return; }
+    S.pet = pet; S.player = player;
+    S.lastDay = dayStr(now()); S.days = 1; S.streak = 1; S.lastTick = now(); S.coins = 20; S.hatchedAt = now();
+    S.today = newToday();
+    diary(`${pet}がうまれた！（No.${fmtId(S.seed)}）`);
+    save(); closeModal(); updateUI();
+    setTimeout(() => { startAnim('jump', 600); say(`ぴ…ぴぃ！\n（${pet}は あなたをじっと見ている）`); }, 300);
+  };
+  setTimeout(() => $('#iPet').focus(), 100);
+}
+
+function openTeach() {
+  if (busy()) return;
+  const left = 3 - S.today.teach;
+  const learning = S.words.filter(w => !w.learned);
+  openModal(`
+    <h2>ことばをおしえる</h2>
+    <p>おなじことばを <b>別の日に${need()}回</b> 聞かせると覚えるよ。${S.stage === 'baby' ? '<br>（大きくなると、もっと早く覚える）' : ''}</p>
+    <p>きょう おしえられるのは あと <b>${Math.max(0, left)}回</b></p>
+    ${learning.length ? `<p style="opacity:.75">おぼえかけ：${learning.map(w => esc(w.t) + '(' + w.n + '/' + need() + ')').join('、')}</p>` : ''}
+    <form id="fTeach">
+      <input id="iWord" maxlength="10" placeholder="例：おはよう／すき／ごはん" autocomplete="off" ${left <= 0 ? 'disabled' : ''}>
+      <div class="err" id="tErr"></div>
+      <div class="row"><button class="btn sub" type="button" id="tCancel">やめる</button><button class="btn" type="submit" ${left <= 0 ? 'disabled' : ''}>聞かせる</button></div>
+    </form>
+    <p style="opacity:.7">ヒント：「おはよう」「ごはん」「おでかけ」「すき」「かわいい」「あいたかった」などは、場面にあわせて使ってくれるよ。</p>`);
+  $('#tCancel').onclick = closeModal;
+  $('#fTeach').onsubmit = e => {
+    e.preventDefault();
+    const w = $('#iWord').value.trim().replace(/\s+/g, '');
+    if (!w) { $('#tErr').textContent = 'ことばを入れてね'; return; }
+    teach(w);
+  };
+  if (left > 0) setTimeout(() => $('#iWord').focus(), 100);
+}
+function teach(word) {
+  const today = dayStr(now());
+  let w = S.words.find(x => x.t === word);
+  if (w && w.learned) { closeModal(); wake(); startAnim('jump', 500); say(`${word}！\n（もう知ってるよ、という顔）`); return; }
+  if (w && w.lastDay === today) { $('#tErr').textContent = 'そのことばは きょうはもう聞かせたよ。また明日！'; return; }
+  closeModal(); wake();
+  S.today.teach++; S.affection += 3;
+  if (!w) { w = { t: word, n: 0, lastDay: '', learned: false }; S.words.push(w); }
+  w.n++; w.lastDay = today;
+  const cs = chars(word);
+  startAnim('listen', 1300); prog('teach');
+  setTimeout(() => {
+    if (w.n >= need()) {
+      w.learned = true; w.learnedAt = now();
+      startAnim('jump', 700); confetti(); jingle();
+      say(`${word}！ ${word}！`);
+      diary(`「${word}」を覚えた！`);
+      toast(`「${word}」を覚えた！`);
+    } else if (w.n === 1) say(`${cs[0]}…？\n（じっと聞いている）`);
+    else { const half = cs.slice(0, Math.ceil(cs.length / 2)).join(''); say(`${half}…${half}…？\n（あと すこしで覚えそう）`); }
+    save(); updateUI(); checkGrowth();
+  }, 1300);
+  save(); updateUI();
+}
+
+// ============ きせかえ ============
+function renderPreview(c) {
+  withCtx(c.getContext('2d'), () => {
+    previewing = true;
+    try { const t = 1000; R(0, 0, 64, 44, '#f3e3c3'); R(0, 44, 64, 20, '#e9d5ae'); drawPet(t); } finally { previewing = false; }
+  });
+}
+function openWear(slot = 'head', changed = false) {
+  if (busy()) return;
+  const owned = Object.keys(CLOTHES).filter(k => CLOTHES[k].slot === slot && S.clothes[k]);
+  const cur = S.wear[slot];
+  openModal(`
+    <h2>きせかえ</h2>
+    <canvas class="prev" id="wPrev" width="64" height="64"></canvas>
+    <div class="tabs">${Object.entries(SLOTN).map(([k, n]) => `<button class="tab ${k === slot ? 'on' : ''}" data-slot="${k}">${n}</button>`).join('')}</div>
+    <div class="wgrid">
+      <button class="wcell ${!cur ? 'on' : ''}" data-w=""><canvas width="12" height="8"></canvas>なし</button>
+      ${owned.map(k => `<button class="wcell ${cur === k ? 'on' : ''}" data-w="${k}"><canvas width="12" height="8" data-cl="${k}"></canvas>${CLOTHES[k].name}</button>`).join('')}
+    </div>
+    ${owned.length ? '' : '<p style="opacity:.7">まだ もっていないよ。おみせで買ったり、おでかけで見つけたりしよう。</p>'}
+    <div class="row"><button class="btn" id="wDone">これでOK</button></div>`);
+  paintIcons(); renderPreview($('#wPrev'));
+  card.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => openWear(b.dataset.slot, changed));
+  card.querySelectorAll('[data-w]').forEach(b => b.onclick = () => { S.wear[slot] = b.dataset.w || null; save(); blip(1000, .04, .03); openWear(slot, true); });
+  onModalClose = () => {
+    if (!changed) return;
+    prog('wear'); startAnim('proud', 1200); hearts(3);
+    const c = ctxWord('wear'), on = Object.values(S.wear).filter(Boolean).length;
+    say(on ? (c ? `${c}！\n（くるっとまわって 見せてくれた）` : `${babble()}\n（にあってる！ うれしそう）`) : `${babble()}\n（すっきり！）`);
+  };
+  $('#wDone').onclick = closeModal;
+}
+
+// ============ たからもの ============
+function openTreasure(place = 'park') {
+  if (busy()) return;
+  const list = TREAS[place], got = list.filter(x => S.treasures[x.id]).length;
+  const rareC = Object.keys(CLOTHES).find(k => CLOTHES[k].rare === place);
+  openModal(`
+    <h2>たからもの</h2>
+    <div class="tabs">${Object.entries(PLACES).map(([k, p]) => `<button class="tab ${k === place ? 'on' : ''}" data-pl="${k}">${p.ok() || Object.keys(S.treasures).some(id => TBY[id] && TBY[id].place === k) ? p.name : '？？？'}</button>`).join('')}</div>
+    <p>${got}/${list.length} しゅるい ${got === list.length ? '★ コンプリート！' : '（ぜんぶ集めるとコイン+50）'}</p>
+    <div class="tgrid">${list.map(x => { const n = S.treasures[x.id]; return `<div class="tcell ${n ? '' : 'no'}"><canvas width="7" height="7" data-tr="${x.id}" ${n ? '' : 'data-no="1"'}></canvas>${n ? x.name + (x.rare ? '★' : '') : '？？？'}${n ? `<small>×${n}</small>` : ''}</div>`; }).join('')}</div>
+    <h3>この場所だけの レアきせかえ</h3>
+    <div class="item ${S.clothes[rareC] ? '' : 'locked'}"><canvas width="12" height="8" data-cl="${rareC}"></canvas><div class="nm">${S.clothes[rareC] ? CLOTHES[rareC].name : '？？？'}<small>${S.clothes[rareC] ? 'ゲットずみ' : 'おでかけで まれに見つかる'}</small></div></div>
+    <p style="opacity:.7">おでかけ ${S.trips}回</p>
+    <div class="row"><button class="btn sub" id="trClose">とじる</button></div>`);
+  paintIcons();
+  if (!S.clothes[rareC]) card.querySelectorAll(`canvas[data-cl="${rareC}"]`).forEach(c => { const ic = iconOf(rareC); paintCenter(c, ic.rows, Object.fromEntries(Object.keys(ic.map).map(k => [k, '#b9aebd']))); });
+  card.querySelectorAll('[data-pl]').forEach(b => b.onclick = () => openTreasure(b.dataset.pl));
+  $('#trClose').onclick = closeModal;
+}
+
+// ============ おみせ ============
+function openShop(msg = '', tab = 'wear') {
+  if (busy()) return;
+  let body = '';
+  if (tab === 'food') body = Object.entries(FOODS).filter(([k]) => k !== 'onigiri').map(([k, f]) => `
+      <div class="item"><canvas width="7" height="7" data-food="${k}"></canvas>
+        <div class="nm">${f.name}（もってる ${S.inv[k]}こ）<small>${f.note}</small></div>
+        <button data-buy="${k}" ${S.coins < f.price ? 'disabled' : ''}>${f.price}コイン</button></div>`).join('');
+  else if (tab === 'wear') body = Object.entries(SLOTN).map(([sl, sn]) => `<h3>${sn}</h3>` + Object.entries(CLOTHES).filter(([, c]) => c.slot === sl && !c.rare).map(([k, c]) => `
+      <div class="item"><canvas width="12" height="8" data-cl="${k}"></canvas>
+        <div class="nm">${c.name}</div>
+        ${S.clothes[k] ? '<button disabled>もってる</button>' : `<button data-clbuy="${k}" ${S.coins < c.price ? 'disabled' : ''}>${c.price}コイン</button>`}</div>`).join('')).join('')
+      + '<p style="opacity:.7">※ はなかんむり など、おでかけでしか見つからない きせかえもあるよ。</p>';
+  else body = Object.entries(FURN).map(([k, f]) => `
+      <div class="item"><canvas width="7" height="7" data-furn="${k}"></canvas>
+        <div class="nm">${f.name}<small>${f.note}</small></div>
+        ${S.furn[k] ? '<button disabled>かざってる</button>' : `<button data-furnbuy="${k}" ${S.coins < f.price ? 'disabled' : ''}>${f.price}コイン</button>`}</div>`).join('');
+  openModal(`
+    <h2>おみせ <span style="float:right;font-size:15px">コイン ${S.coins}</span></h2>
+    <div class="tabs"><button class="tab ${tab === 'wear' ? 'on' : ''}" data-st="wear">きせかえ</button><button class="tab ${tab === 'food' ? 'on' : ''}" data-st="food">おやつ</button><button class="tab ${tab === 'furn' ? 'on' : ''}" data-st="furn">もようがえ</button></div>
+    <div class="err" style="color:#2a8a3a">${msg}</div>
+    ${body}
+    <div class="row"><button class="btn sub" id="shClose">とじる</button></div>`);
+  paintIcons();
+  card.querySelectorAll('[data-st]').forEach(b => b.onclick = () => openShop('', b.dataset.st));
+  card.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => { const k = b.dataset.buy, f = FOODS[k]; if (S.coins < f.price) return; S.coins -= f.price; S.inv[k]++; blip(1200, .06); save(); updateUI(); openShop(`${f.name}を買った！ ごはんであげられるよ`, 'food'); });
+  card.querySelectorAll('[data-clbuy]').forEach(b => b.onclick = () => { const k = b.dataset.clbuy, c = CLOTHES[k]; if (S.coins < c.price) return; S.coins -= c.price; S.clothes[k] = true; jingle(); save(); updateUI(); openShop(`${c.name}を買った！「きせかえ」で着せてあげよう`, 'wear'); });
+  card.querySelectorAll('[data-furnbuy]').forEach(b => b.onclick = () => { const k = b.dataset.furnbuy, f = FURN[k]; if (S.coins < f.price) return; S.coins -= f.price; S.furn[k] = true; jingle(); diary(`へやに${f.name}をかざった`); save(); updateUI(); openShop(`${f.name}をかざった！`, 'furn'); });
+  $('#shClose').onclick = closeModal;
+}
+
+// ============ おねがい ============
+function openMissions() {
+  const T = S.today;
+  openModal(`
+    <h2>きょうのおねがい</h2>
+    <p style="opacity:.7">1つ達成でコイン+10、ぜんぶでボーナス+20。毎日かわるよ。</p>
+    ${T.missions.map(k => { const d = T.done.includes(k), v = Math.min(T.m[k] || 0, MIS[k].n);
+      return `<div class="mis ${d ? 'done' : ''}"><span>${d ? '★' : '☆'} ${MIS[k].label}</span><span>${d ? 'たっせい' : v + '/' + MIS[k].n}</span></div>`; }).join('')}
+    <div class="row"><button class="btn sub" id="msClose">とじる</button></div>`);
+  $('#msClose').onclick = closeModal;
+}
+
+// ============ しゃしん ============
+async function takePhoto() {
+  if (mg || reunion) return;
+  blip(1800, .04, .05); blip(900, .08, .04);
+  const W = 360, H = 460, off = document.createElement('canvas'); off.width = W; off.height = H;
+  const g = off.getContext('2d'); g.imageSmoothingEnabled = false;
+  g.fillStyle = '#f6e7d0'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#3a2b3f'; g.fillRect(16, 16, W - 32, W - 32);
+  drawScene(performance.now(), 0);
+  g.drawImage(cv, 22, 22, W - 44, W - 44);
+  flash = .9;
+  g.fillStyle = '#3a2b3f'; g.textBaseline = 'top';
+  g.font = '26px "DotGothic16", sans-serif'; g.fillText(S.pet, 22, W - 4);
+  g.font = '15px "DotGothic16", sans-serif';
+  g.fillText(`No.${fmtId(S.seed)}　${STAGES[S.stage].label}${trip ? '　＠' + PLACES[trip.place].name : ''}`, 22, W + 30);
+  g.fillText(`${S.player}といっしょに ${S.days}日目`, 22, W + 52);
+  g.textAlign = 'right'; g.fillStyle = '#c0607a'; g.fillText('ぴこっと', W - 22, W + 52);
+  const url = off.toDataURL('image/png');
+  prog('photo');
+  if (trip) diary(`${PLACES[trip.place].name}で しゃしんをとった`);
+  const text = `うちの${S.pet}（No.${fmtId(S.seed)}）${trip ? PLACES[trip.place].name + 'におでかけ中。' : '。'}せかいに1ぴきだけのドットのいきもの #ぴこっと`;
+  const canShareNative = !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share && window.Capacitor.Plugins.Filesystem);
+  let file = null;
+  try { const blob = await new Promise(r => off.toBlob(r, 'image/png')); file = new File([blob], 'pikotto.png', { type: 'image/png' }); } catch (e) {}
+  const canShareWeb = !!(file && navigator.canShare && navigator.canShare({ files: [file] }));
+  openModal(`
+    <h2>しゃしん</h2>
+    <img id="photoImg" src="${url}" alt="${esc(S.pet)}のしゃしん">
+    <p style="opacity:.7">画像を長押しで保存できるよ。</p>
+    <div class="row">${canShareNative || canShareWeb ? '<button class="btn" id="pShare">シェア</button>' : ''}
+      <a class="btn x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">Xにポスト</a></div>
+    <div class="row"><button class="btn sub" id="pClose">とじる</button></div>`);
+  $('#pClose').onclick = closeModal;
+  const sb = $('#pShare');
+  if (sb) sb.onclick = async () => {
+    try {
+      if (canShareNative) {
+        const C = window.Capacitor.Plugins;
+        const f = await C.Filesystem.writeFile({ path: 'pikotto.png', data: url.split(',')[1], directory: 'CACHE' });
+        await C.Share.share({ title: S.pet, text, files: [f.uri] });
+      } else await navigator.share({ files: [file], text });
+    } catch (e) {}
+  };
+}
+
+// ============ ノート ============
+function openNote(tab = 'words') {
+  if (busy()) return;
+  const L = S.words.filter(w => w.learned), H = S.words.filter(w => !w.learned);
+  const nameState = ['まだ よべない', `「${esc(chars(S.player)[0])}…」まで言える`, `「${esc(S.player)}」とよべる！`][S.nameLevel];
+  const st = S.stage;
+  let body = '';
+  if (tab === 'words') body = `
+    <p>あなたの名前：${nameState}</p>
+    <p>覚えたことば（${L.length}）</p>
+    <div class="chips">${L.map(w => `<span class="chip">${esc(w.t)}</span>`).join('') || '<span style="opacity:.6;font-size:13px">まだないよ</span>'}</div>
+    ${H.length ? `<p style="margin-top:12px">おぼえかけ</p><div class="chips">${H.map(w => `<span class="chip">${esc(w.t)}<small>${'●'.repeat(w.n)}${'○'.repeat(Math.max(0, need() - w.n))}</small></span>`).join('')}</div>` : ''}`;
+  else if (tab === 'diary') body = `<ul class="diary">${S.diary.slice().reverse().map(d => `<li><b>${fmtDate(d.t)}</b>${esc(d.text)}</li>`).join('') || '<li>まだないよ</li>'}</ul>`;
+  else body = `
+    <div class="idbox">No.${fmtId(S.seed)}</div>
+    <p style="text-align:center;opacity:.75;margin-top:-4px">せかいに 1ぴきだけの すがた</p>
+    <div class="prof">
+      <span>からだ</span><span>${SHAPEN[G.shape]}・${PATN[G.pattern]}</span>
+      <span>いろ</span><span><span style="display:inline-block;width:14px;height:14px;background:${G.pal.b};border:2px solid ${G.pal.o};vertical-align:middle"></span> ${G.hue}°</span>
+      <span>め</span><span>${EYEN[G.eye]}</span>
+      <span>あたま</span><span>${st === 'baby' ? '？？？（こどもになるとわかる）' : EARN[G.ear]}</span>
+      <span>しっぽ</span><span>${st === 'baby' ? '？？？' : TAILN[G.tail]}</span>
+      <span>とくべつ</span><span>${st === 'adult' ? ACCN[G.acc] : '？？？（おとなになるとわかる）'}</span>
+      <span>うまれた日</span><span>${S.hatchedAt ? fmtDate(S.hatchedAt) : '-'}</span>
+      <span>おでかけ</span><span>${S.trips}回</span>
+      <span>キャッチ最高</span><span>${S.mgBest}こ</span>
+    </div>
+    ${API_URL ? `<p style="opacity:.7">${S.registered ? 'サーバーで「ほかにいないすがた」と確認ずみ' : 'まだサーバー確認ができていません（オフライン）'}</p>` : ''}`;
+  openModal(`
+    <h2>${esc(S.pet)}のノート</h2>
+    <div class="tabs"><button class="tab ${tab === 'words' ? 'on' : ''}" data-t="words">ことば</button><button class="tab ${tab === 'diary' ? 'on' : ''}" data-t="diary">おもいで</button><button class="tab ${tab === 'prof' ? 'on' : ''}" data-t="prof">プロフィール</button></div>
+    ${body}
+    <div class="row"><button class="btn sub" id="nClose">とじる</button></div>`);
+  card.querySelectorAll('.tab').forEach(b => b.onclick = () => openNote(b.dataset.t));
+  $('#nClose').onclick = closeModal;
+}
+
+function openSettings() {
+  openModal(`
+    <h2>せってい</h2>
+    <div class="row"><button class="btn sub" id="sSound">おと：${S.sound ? 'ON' : 'OFF'}</button></div>
+    <div class="row"><button class="btn danger" id="sReset">はじめから</button></div>
+    <div class="row"><button class="btn sub" id="sClose">とじる</button></div>`);
+  $('#sSound').onclick = () => { S.sound = !S.sound; save(); openSettings(); };
+  $('#sReset').onclick = confirmReset;
+  $('#sClose').onclick = closeModal;
+}
+function confirmReset() {
+  openModal(`
+    <h2>ほんとうに？</h2>
+    <p>${S.pet ? esc(S.pet) + 'との' : ''}思い出も、覚えたことばも、ぜんぶ消えます。<br>同じすがたの子には、もう二度と会えません。</p>
+    <div class="row"><button class="btn sub" id="rNo">やめる</button><button class="btn danger" id="rYes">消す</button></div>`);
+  $('#rNo').onclick = closeModal;
+  $('#rYes').onclick = () => { const snd = S.sound; S = fresh(); S.sound = snd; G = makeGenes(S.seed); S.today = newToday(); save(); closeModal(); anim = null; particles = []; trip = null; mg = null; reunion = null; updateUI(); say('（ふしぎなたまごがある…）'); };
+}
+
+// ============ 重複チェック（サーバーがあるときだけ） ============
+async function ensureUnique() {
+  if (!API_URL) return;
+  for (let i = 0; i < 8; i++) {
+    try {
+      const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 4000);
+      const r = await fetch(API_URL + '/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: S.seed, look: G.look }), signal: ctl.signal });
+      clearTimeout(to);
+      const j = await r.json();
+      if (j.ok) { S.registered = true; save(); return; }
+      S.seed = newSeed(); G = makeGenes(S.seed);
+    } catch (e) { return; }
+  }
+}
+
+// ============ アイコン ============
+function drawIcons() {
+  const map = {
+    food: [['..KK....', '.KWWK...', 'KWWWWK..', 'KWWWWK..', 'KBBBBK..', '.KKKK...'], { K: '#3a2b3f', W: '#fff', B: '#1f3b2a' }],
+    ball: [['..RRRR..', '.RWWRRR.', 'RWWRRRRR', 'RRRRRRRR', 'RRRRRRRR', 'RRRRRRRR', '.RRRRRR.', '..RRRR..'], { R: '#ff5a5a', W: '#ffe0e0' }],
+    talk: [['.KKKKKK.', 'KWWWWWWK', 'KWKWKWWK', 'KWWWWWWK', '.KKKKKK.', '..KK....', '.K......'], { K: '#3a2b3f', W: '#fff' }],
+    book: [['KKKKKKK.', 'KPPPPPK.', 'KPWWWPK.', 'KPPPPPK.', 'KPWWWPK.', 'KPPPPPK.', 'KKKKKKK.'], { K: '#3a2b3f', P: '#ff8fa8', W: '#fff' }],
+    shop: [['KKKKKKKK', 'KRWRWRWK', 'KKKKKKKK', '.KWWWWK.', '.KWKKWK.', '.KWKKWK.', '.KKKKKK.'], { K: '#3a2b3f', R: '#ff5a5a', W: '#fff' }],
+    camera: [['..KK....', 'KKKKKKKK', 'KGGKKGGK', 'KGKWWKGK', 'KGKWWKGK', 'KGGKKGGK', 'KKKKKKKK'], { K: '#3a2b3f', G: '#9a9ab0', W: '#7fd0ff' }],
+    coin: [['..KKKK..', '.KYYYYK.', 'KYYWYYYK', 'KYWYYYYK', 'KYYYYYYK', 'KYYYYYYK', '.KYYYYK.', '..KKKK..'], { K: '#7a5a00', Y: '#ffd84d', W: '#fff6c4' }],
+    hat: [['...KK...', '..KPPK..', '..KPPK..', '.KRRRRK.', 'KPPPPPPK', 'KKKKKKKK'], { K: '#3a2b3f', P: '#c9a6ff', R: '#ff5a7a' }],
+    gem: [['.KKKKKK.', 'KWBBBBBK', 'KBBBBBBK', '.KBBBBK.', '..KBBK..', '...KK...'], { K: '#3a2b3f', B: '#5ad0e0', W: '#e0ffff' }],
+  };
+  document.querySelectorAll('canvas[data-icon]').forEach(c => { const [rows, m] = map[c.dataset.icon]; sprite(rows, 0, 0, m, c.getContext('2d')); });
+}
+
+// ============ 通知（アプリ版：Capacitorのローカル通知） ============
+async function scheduleNotif() {
+  try {
+    const LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+    if (!LN || S.stage === 'egg' || !S.pet) return;
+    await LN.requestPermissions();
+    await LN.cancel({ notifications: [{ id: 1 }, { id: 2 }] });
+    const at = days => { const d = new Date(); d.setDate(d.getDate() + days); d.setHours(19, 0, 0, 0); return d; };
+    const pn = S.nameLevel >= 2 ? S.player : null;
+    await LN.schedule({ notifications: [
+      { id: 1, title: S.pet, body: pn ? `「${pn}、まだかな…？」` : `${S.pet}が まってるよ`, schedule: { at: at(1) } },
+      { id: 2, title: S.pet, body: pn ? `「${pn}…さみしいよ…」` : `${S.pet}が さみしそうにしているよ…`, schedule: { at: at(3) } },
+    ] });
+  } catch (e) {}
+}
+
+// ============ 起動 ============
+cv.addEventListener('pointerdown', onCanvasTap);
+cv.addEventListener('pointermove', e => { if (mg) mg.target = toLogical(e).x; });
+$('#aFeed').onclick = openFeed;
+$('#aPlay').onclick = openPlay;
+$('#aTeach').onclick = openTeach;
+$('#aWear').onclick = () => openWear();
+$('#aShop').onclick = () => openShop();
+$('#aPhoto').onclick = takePhoto;
+$('#aTreasure').onclick = () => openTreasure();
+$('#aNote').onclick = () => openNote();
+$('#mBtn').onclick = openMissions;
+$('#btnSettings').onclick = openSettings;
+$('#tripBack').onclick = () => { if (trip && !trip.ending) { trip.ending = true; say('（おうちに かえろう）'); setTimeout(endTrip, 900); } };
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { applyDecay(); save(); scheduleNotif(); }
+  else { applyDecay(); if (!mg && !trip && dayCheck()) greet(); updateUI(); }
+});
+
+if (location.hash === '#debug') {
+  $('#debug').style.display = 'flex';
+  $('#debug').onclick = e => {
+    const d = e.target.dataset.d; if (!d || mg || trip) return;
+    if (d === 'day') { S.dbg = (S.dbg || 0) + 1; applyDecay(); if (dayCheck()) greet(); }
+    if (d === 'away') { S.dbg = (S.dbg || 0) + 3; applyDecay(); if (dayCheck()) greet(); }
+    if (d === 'grow') { if (S.stage === 'baby') { S.days = Math.max(S.days, 3); S.affection = Math.max(S.affection, 20); } else if (S.stage === 'child') { S.days = Math.max(S.days, 7); S.affection = Math.max(S.affection, 60); } checkGrowth(); }
+    if (d === 'hungry') S.hunger = clamp(S.hunger - 50);
+    if (d === 'coin') S.coins += 100;
+    if (d === 'reroll') { S.seed = newSeed(); G = makeGenes(S.seed); }
+    if (d === 'reset') confirmReset();
+    save(); updateUI();
+  };
+}
+
+drawIcons();
+applyDecay();
+dayCheck();
+updateUI();
+if (S.stage !== 'egg' && !S.player) openNaming();
+else if (S.stage === 'egg') setTimeout(() => say(S.eggTaps ? '（たまごが うごいた気がする…）' : '（ふしぎなたまごをひろった。\nタップしてみよう）'), 500);
+else greet();
+setInterval(() => { if (!mg && !trip && !reunion) { applyDecay(); if (dayCheck()) greet(); save(); updateUI(); } }, 20000);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

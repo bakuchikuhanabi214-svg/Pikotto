@@ -1,0 +1,29 @@
+# 依存パッケージ（npm install で毎回作られる）
+node_modules/
+
+# Capacitor のビルド生成物
+android/app/build/
+android/.gradle/
+android/build/
+android/local.properties
+ios/App/Pods/
+ios/App/build/
+ios/DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# Cloudflare Worker のローカルデータ
+server/.wrangler/
+
+# OS・エディタのゴミ
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 署名用の鍵・秘密情報（絶対に上げない）
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+.env
