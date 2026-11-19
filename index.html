@@ -23,6 +23,7 @@
   .iconbtn{border:3px solid var(--line);background:var(--btn);border-radius:10px;width:36px;height:36px;font-size:16px;
     font-family:inherit;color:var(--ink);cursor:pointer;flex:none;box-shadow:0 3px 0 var(--line)}
   .iconbtn:active{transform:translateY(3px);box-shadow:none}
+  .iconbtn.off{opacity:.5;text-decoration:line-through}
   #screenWrap{position:relative;border:4px solid var(--line);border-radius:14px;overflow:hidden;background:#000;aspect-ratio:1/1}
   canvas#c{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges;cursor:pointer;touch-action:none}
   #bubble{position:absolute;left:50%;top:7%;transform:translateX(-50%);max-width:86%;min-width:40%;
@@ -117,6 +118,7 @@
     <div><span id="petName">？？？</span><span id="stageLabel">たまご</span></div>
     <div style="display:flex;align-items:center;gap:8px">
       <div id="dayInfo"></div>
+      <button class="iconbtn" id="btnBgm" aria-label="BGM オン・オフ">♪</button>
       <button class="iconbtn" id="btnSettings" aria-label="せってい">⚙</button>
     </div>
   </header>
@@ -153,6 +155,162 @@
 </div>
 <div id="modal"><div class="card" id="card"></div></div>
 
+<script>
+// =====================================================================
+//  ぴこっと BGM エンジン（WebAudioでその場で鳴らす。音声ファイル不要）
+// =====================================================================
+const PikoBGM = (() => {
+  const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  function freq(n) {
+    const m = /^([A-G])(#|b)?(-?\d)$/.exec(n); if (!m) return 0;
+    const midi = 12 * (+m[3] + 1) + NOTE[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+    return 440 * Math.pow(2, (midi - 69) / 12);
+  }
+  // "E5:2 G5:2 -:4" → [{s,len,f}]
+  function seq(str) {
+    const out = []; let s = 0;
+    str.trim().split(/\s+/).forEach(tok => {
+      if (tok === '|') return;
+      const [n, l] = tok.split(':'); const len = +l;
+      if (n !== '-') out.push({ s, len, f: freq(n) });
+      s += len;
+    });
+    return { notes: out, total: s };
+  }
+
+  // ------------------------------------------------------------- 曲データ
+  const TRACKS = {
+    pokapoka: {
+      name: 'ぽかぽかおへや', bpm: 96, spb: 4, bar: 16, lead: 'tri', vol: 1,
+      mel: `E5:2 G5:2 C6:2 G5:2 A5:4 G5:4 | E5:2 C5:2 E5:2 A5:2 G5:6 -:2 | F5:2 A5:2 C6:2 A5:2 G5:2 F5:2 E5:4 | D5:2 E5:2 F5:2 G5:2 D5:8 |
+            E5:2 G5:2 C6:2 E6:2 D6:4 C6:4 | A5:2 C6:2 B5:2 A5:2 G5:8 | F5:2 E5:2 D5:2 F5:2 B4:2 D5:2 G5:4 | C5:4 E5:2 G5:2 C6:8`,
+      bass: `C3:4 G3:4 C3:4 G3:4 | A2:4 E3:4 A2:4 E3:4 | F2:4 C3:4 F2:4 C3:4 | G2:4 D3:4 G2:4 D3:4 |
+             C3:4 G3:4 C3:4 G3:4 | A2:4 E3:4 A2:4 E3:4 | D3:4 A2:4 G2:4 D3:4 | C3:4 G2:4 C3:8`,
+      chords: [['C4','E4','G4'],['A3','C4','E4'],['F3','A3','C4'],['G3','B3','D4'],['C4','E4','G4'],['A3','C4','E4'],['D4','F4','A4'],['C4','E4','G4']],
+      pad: 'offbeat', drums: { k: 'x.......x.......', h: '....x.......x...', s: '................' },
+    },
+    march: {
+      name: 'ぴこぴこマーチ', bpm: 126, spb: 4, bar: 16, lead: 'pulse', vol: .8,
+      mel: `C5:2 F5:2 A5:2 F5:2 C6:3 A5:1 F5:4 | G5:2 E5:2 C5:2 E5:2 G5:4 -:4 | A5:2 F5:2 D5:2 F5:2 A5:2 D6:2 C6:4 | Bb5:2 A5:2 G5:2 F5:2 E5:2 F5:2 G5:4 |
+            C6:2 C6:2 A5:2 F5:2 C6:3 D6:1 C6:4 | Bb5:2 G5:2 E5:2 G5:2 C6:6 -:2 | D6:2 C6:2 Bb5:2 A5:2 G5:2 A5:2 Bb5:2 E5:2 | F5:4 C5:2 F5:2 F5:4 -:4`,
+      bass: `F2:2 -:2 C3:2 -:2 F2:2 -:2 C3:2 -:2 | C3:2 -:2 G2:2 -:2 C3:2 -:2 G2:2 -:2 | D3:2 -:2 A2:2 -:2 D3:2 -:2 A2:2 -:2 | Bb2:2 -:2 F2:2 -:2 C3:2 -:2 G2:2 -:2 |
+             F2:2 -:2 C3:2 -:2 F2:2 -:2 C3:2 -:2 | C3:2 -:2 G2:2 -:2 C3:2 -:2 E3:2 -:2 | Bb2:2 -:2 F2:2 -:2 C3:2 -:2 G2:2 -:2 | F2:2 -:2 C3:2 -:2 F2:4 -:4`,
+      chords: [['F4','A4','C5'],['E4','G4','C5'],['D4','F4','A4'],['F4','Bb4','D5'],['F4','A4','C5'],['E4','G4','C5'],['F4','Bb4','D5'],['F4','A4','C5']],
+      pad: 'stab', drums: { k: 'x.......x.......', h: 'x.x.x.x.x.x.x.x.', s: '....x.......x...' },
+    },
+    waltz: {
+      name: 'おひさまワルツ', bpm: 104, spb: 4, bar: 12, lead: 'box', vol: 1,
+      mel: `D5:4 G5:4 B5:4 | A5:6 F#5:2 D5:4 | E5:4 G5:4 B5:4 | C6:6 B5:2 A5:4 |
+            B5:4 D6:4 B5:4 | G5:6 E5:2 G5:4 | A5:4 C6:4 F#5:4 | G5:12`,
+      bass: `G2:4 -:8 | D3:4 -:8 | E2:4 -:8 | C3:4 -:8 | G2:4 -:8 | E2:4 -:8 | A2:4 -:4 D3:4 | G2:12`,
+      chords: [['B3','D4','G4'],['A3','D4','F#4'],['B3','E4','G4'],['C4','E4','G4'],['B3','D4','G4'],['B3','E4','G4'],['A3','C4','E4'],['B3','D4','G4']],
+      pad: 'waltz', drums: { k: 'x...........', h: '....x...x...', s: '............' },
+    },
+    lullaby: {
+      name: 'よるのこもりうた', bpm: 70, spb: 4, bar: 16, lead: 'box', vol: .9,
+      mel: `E5:4 A5:4 C6:4 B5:4 | A5:8 F5:4 -:4 | G5:4 E5:4 C5:4 E5:4 | D5:8 B4:4 -:4 |
+            C5:4 F5:4 A5:4 C6:4 | C6:4 G5:4 E5:8 | F5:4 D5:4 G#5:4 B5:4 | A5:16`,
+      bass: `A2:16 | F2:16 | C3:16 | G2:16 | F2:16 | C3:16 | D3:8 E3:8 | A2:16`,
+      chords: [['A3','C4','E4'],['F3','A3','C4'],['E3','G3','C4'],['D3','G3','B3'],['F3','A3','C4'],['E3','G3','C4'],['F3','A3','D4'],['A3','C4','E4']],
+      pad: 'hold', drums: null,
+    },
+  };
+
+  // ------------------------------------------------------------- 音づくり
+  let ac = null, master = null, noiseBuf = null, pulseWave = null;
+  let cur = null, timer = null, startAt = 0, nextStep = 0, volume = .5;
+  function init() {
+    if (ac) return;
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    master = ac.createGain(); master.gain.value = .14 * volume;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5200;
+    master.connect(lp).connect(ac.destination);
+    noiseBuf = ac.createBuffer(1, ac.sampleRate * .3, ac.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const N = 32, re = new Float32Array(N), im = new Float32Array(N), duty = .25;
+    for (let n = 1; n < N; n++) re[n] = 2 / (n * Math.PI) * Math.sin(n * Math.PI * duty);
+    pulseWave = ac.createPeriodicWave(re, im);
+  }
+  function tone(t, f, dur, kind, vol) {
+    if (!f) return;
+    const o = ac.createOscillator(), g = ac.createGain();
+    if (kind === 'pulse') o.setPeriodicWave(pulseWave);
+    else o.type = kind === 'tri' || kind === 'bass' ? 'triangle' : 'sine';
+    o.frequency.value = f;
+    o.connect(g).connect(master);
+    if (kind === 'box') {   // オルゴール風：すぐ鳴って、ゆっくり消える
+      const o2 = ac.createOscillator(), g2 = ac.createGain(); o2.type = 'sine'; o2.frequency.value = f * 2;
+      o2.connect(g2).connect(master); g2.gain.setValueAtTime(vol * .25, t); g2.gain.exponentialRampToValueAtTime(.0001, t + .5);
+      o2.start(t); o2.stop(t + .6);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + Math.max(.9, dur * 1.6));
+      o.start(t); o.stop(t + Math.max(1, dur * 1.7));
+      return;
+    }
+    if (kind === 'tri' || kind === 'pulse') {   // ちょっとだけビブラート
+      const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = 5.5; lg.gain.value = f * .006;
+      lfo.connect(lg).connect(o.frequency); lfo.start(t + .12); lfo.stop(t + dur + .05);
+    }
+    const rel = kind === 'bass' ? .04 : .06;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .01);
+    g.gain.setValueAtTime(vol * .8, t + Math.max(.02, dur - rel)); g.gain.linearRampToValueAtTime(0, t + dur);
+    o.start(t); o.stop(t + dur + .02);
+  }
+  function drum(t, kind) {
+    if (kind === 'k') {
+      const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + .12);
+      g.gain.setValueAtTime(.55, t); g.gain.exponentialRampToValueAtTime(.001, t + .15); o.connect(g).connect(master); o.start(t); o.stop(t + .16);
+    } else {
+      const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noiseBuf;
+      f.type = kind === 'h' ? 'highpass' : 'bandpass'; f.frequency.value = kind === 'h' ? 7000 : 1800;
+      const len = kind === 'h' ? .03 : .12, v = kind === 'h' ? .12 : .25;
+      g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + len);
+      s.connect(f).connect(g).connect(master); s.start(t); s.stop(t + len + .01);
+    }
+  }
+
+  // ------------------------------------------------------------- 再生
+  function compile(tr) {
+    const mel = seq(tr.mel), bass = seq(tr.bass), loop = mel.total;
+    const ev = [];
+    mel.notes.forEach(n => ev.push({ s: n.s, len: n.len, f: n.f, k: tr.lead, v: tr.lead === 'box' ? .55 : tr.lead === 'pulse' ? .32 : .5 }));
+    bass.notes.forEach(n => ev.push({ s: n.s, len: n.len, f: n.f, k: tr.lead === 'box' ? 'sine' : 'bass', v: tr.lead === 'box' ? .45 : .55 }));
+    tr.chords.forEach((ch, b) => {
+      const s0 = b * tr.bar, fs = ch.map(freq);
+      if (tr.pad === 'offbeat') for (let i = 2; i < tr.bar; i += 4) fs.forEach(f => ev.push({ s: s0 + i, len: 1.5, f, k: 'sine', v: .09 }));
+      if (tr.pad === 'stab') for (let i = 2; i < tr.bar; i += 4) fs.forEach(f => ev.push({ s: s0 + i, len: 1, f, k: 'pulse', v: .06 }));
+      if (tr.pad === 'waltz') [4, 8].forEach(i => fs.forEach(f => ev.push({ s: s0 + i, len: 2, f, k: 'box', v: .12 })));
+      if (tr.pad === 'hold') fs.forEach(f => ev.push({ s: s0, len: tr.bar, f, k: 'sine', v: .07 }));
+    });
+    if (tr.drums) for (let b = 0; b < loop / tr.bar; b++) for (const k of ['k', 'h', 's']) [...tr.drums[k]].forEach((c, i) => { if (c === 'x') ev.push({ s: b * tr.bar + i, drum: k }); });
+    ev.sort((a, b) => a.s - b.s);
+    return { ev, loop, stepDur: 60 / tr.bpm / tr.spb };
+  }
+  function tick() {
+    if (!cur) return;
+    const ahead = ac.currentTime + .15;
+    while (true) {
+      const t = startAt + nextStep * cur.stepDur;
+      if (t > ahead) break;
+      const loopN = Math.floor(nextStep / cur.loop), local = nextStep - loopN * cur.loop;
+      for (const e of cur.ev) if (e.s === local) { if (e.drum) drum(t, e.drum); else tone(t, e.f, e.len * cur.stepDur, e.k, e.v * cur.vol); }
+      nextStep++;
+    }
+  }
+  function play(id) {
+    init(); if (ac.state === 'suspended') ac.resume();
+    stop();
+    const tr = TRACKS[id]; if (!tr) return;
+    cur = Object.assign(compile(tr), { id, vol: tr.vol });
+    startAt = ac.currentTime + .08; nextStep = 0;
+    timer = setInterval(tick, 25); tick();
+  }
+  function stop() { if (timer) clearInterval(timer); timer = null; cur = null; }
+  function setVolume(v) { volume = v; if (master) master.gain.setTargetAtTime(.14 * v, ac.currentTime, .05); }
+  function beat() { if (!cur || !ac) return -1; return Math.floor((ac.currentTime - startAt) / cur.stepDur / 4); }
+  return { TRACKS, play, stop, setVolume, beat, get playing() { return cur && cur.id; } };
+})();
+
+</script>
 <script>
 (() => {
 'use strict';
@@ -278,7 +436,7 @@ function fresh() {
   return {
     v: 3, seed: newSeed(), stage: 'egg', eggTaps: 0, player: '', pet: '',
     hunger: 80, mood: 70, affection: 0, lastTick: Date.now(), lastDay: '', days: 0, streak: 0,
-    nameLevel: 0, words: [], diary: [], today: null, sound: true, dbg: 0,
+    nameLevel: 0, words: [], diary: [], today: null, sound: true, bgm: true, dbg: 0,
     coins: 0, inv: { apple: 0, pudding: 0, cake: 0 }, furn: {}, mgBest: 0, registered: false,
     clothes: {}, wear: { head: null, face: null, neck: null }, treasures: {}, trips: 0, reunions: 0
   };
@@ -733,11 +891,12 @@ function startMG() {
   if (S.hunger < 15) { startAnim('listen', 800); say('（おなかがすいて うごけないみたい…）'); return; }
   bubble.classList.remove('show');
   mg = { start: performance.now() + 1200, dur: 30000, x: 32, target: 32, items: [], score: 0, stun: 0, happy: 0, lastSpawn: 0 };
+  updateBGM();
   $('#hud').classList.add('show'); $('#hudL').textContent = 'よーい…'; $('#hudR').textContent = 'ゆびで左右にうごかそう';
   setUIBusy(true);
 }
 function endMG() {
-  const sc = mg.score; mg = null;
+  const sc = mg.score; mg = null; updateBGM();
   $('#hud').classList.remove('show'); setUIBusy(false);
   const best = sc > S.mgBest; if (best) S.mgBest = sc;
   S.coins += sc;
@@ -780,6 +939,7 @@ function startTrip(place) {
   flash = 1.2; blip(700, .1, .04, 'triangle');
   const t = performance.now();
   trip = { place, x: 14, target: 14, spots: [], finds: [], max: 3, nextSpawn: t + 900, digUntil: 0, dig: null, happy: 0, wanderAt: t + 1500, ending: false, moving: false, talkAt: t + 6000 };
+  updateBGM();
   $('#hud').classList.add('show'); $('#tripBack').classList.add('show');
   setUIBusy(true); updateTripHud();
   setTimeout(() => { if (!trip) return; const pn = callName(); say(`${PLACES[place].hello}\n（${S.stage === 'adult' && pn ? pn + 'といっしょで うれしそう' : 'わくわくしている'}）`); toast('キラキラをタップすると さがしにいくよ'); }, 800);
@@ -844,7 +1004,7 @@ function doFind(t) {
 }
 function endTrip() {
   if (!trip) return;
-  const T = trip; trip = null; flash = 1;
+  const T = trip; trip = null; flash = 1; updateBGM();
   $('#hud').classList.remove('show'); $('#tripBack').classList.remove('show'); bubble.classList.remove('show');
   setUIBusy(false);
   let stat;
@@ -1462,10 +1622,12 @@ function openNote(tab = 'words') {
 function openSettings() {
   openModal(`
     <h2>せってい</h2>
-    <div class="row"><button class="btn sub" id="sSound">おと：${S.sound ? 'ON' : 'OFF'}</button></div>
+    <div class="row"><button class="btn sub" id="sBgm">BGM：${S.bgm ? 'ON' : 'OFF'}</button><button class="btn sub" id="sSound">こうかおん：${S.sound ? 'ON' : 'OFF'}</button></div>
+    <p style="opacity:.7">BGMは場面で自動でかわるよ。昼のおへや「ぽかぽかおへや」、夕方「おひさまワルツ」、夜「よるのこもりうた」、おでかけ・おやつキャッチ「ぴこぴこマーチ」、ほしのおか「よるのこもりうた」。</p>
     <div class="row"><button class="btn danger" id="sReset">はじめから</button></div>
     <div class="row"><button class="btn sub" id="sClose">とじる</button></div>`);
   $('#sSound').onclick = () => { S.sound = !S.sound; save(); openSettings(); };
+  $('#sBgm').onclick = () => { S.bgm = !S.bgm; save(); audioUnlocked = true; updateBGM(); openSettings(); };
   $('#sReset').onclick = confirmReset;
   $('#sClose').onclick = closeModal;
 }
@@ -1525,6 +1687,26 @@ async function scheduleNotif() {
   } catch (e) {}
 }
 
+// ============ BGM（場面ごとに自動で切りかえ） ============
+let audioUnlocked = false;
+function wantTrack() {
+  if (mg) return 'march';
+  if (trip) return trip.place === 'hill' ? 'lullaby' : 'march';
+  if (isNight()) return 'lullaby';
+  if (hour() >= 17) return 'waltz';
+  return 'pokapoka';
+}
+function updateBGM() {
+  const btn = $('#btnBgm');
+  btn.classList.toggle('off', !S.bgm); btn.setAttribute('aria-pressed', S.bgm ? 'true' : 'false');
+  if (!audioUnlocked || !S.bgm || document.hidden) { if (PikoBGM.playing) PikoBGM.stop(); return; }
+  const w = wantTrack();
+  if (PikoBGM.playing !== w) { try { PikoBGM.play(w); } catch (e) {} }
+}
+function unlockAudio() { if (audioUnlocked) return; audioUnlocked = true; updateBGM(); }
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, unlockAudio, { capture: true, passive: true }));
+PikoBGM.setVolume(.55);
+
 // ============ 起動 ============
 cv.addEventListener('pointerdown', onCanvasTap);
 cv.addEventListener('pointermove', e => { if (mg) mg.target = toLogical(e).x; });
@@ -1538,10 +1720,12 @@ $('#aTreasure').onclick = () => openTreasure();
 $('#aNote').onclick = () => openNote();
 $('#mBtn').onclick = openMissions;
 $('#btnSettings').onclick = openSettings;
+$('#btnBgm').onclick = () => { S.bgm = !S.bgm; save(); audioUnlocked = true; updateBGM(); toast(S.bgm ? 'BGM オン' : 'BGM オフ'); };
 $('#tripBack').onclick = () => { if (trip && !trip.ending) { trip.ending = true; say('（おうちに かえろう）'); setTimeout(endTrip, 900); } };
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { applyDecay(); save(); scheduleNotif(); }
   else { applyDecay(); if (!mg && !trip && dayCheck()) greet(); updateUI(); }
+  updateBGM();
 });
 
 if (location.hash === '#debug') {
@@ -1560,13 +1744,14 @@ if (location.hash === '#debug') {
 }
 
 drawIcons();
+updateBGM();
 applyDecay();
 dayCheck();
 updateUI();
 if (S.stage !== 'egg' && !S.player) openNaming();
 else if (S.stage === 'egg') setTimeout(() => say(S.eggTaps ? '（たまごが うごいた気がする…）' : '（ふしぎなたまごをひろった。\nタップしてみよう）'), 500);
 else greet();
-setInterval(() => { if (!mg && !trip && !reunion) { applyDecay(); if (dayCheck()) greet(); save(); updateUI(); } }, 20000);
+setInterval(() => { updateBGM(); if (!mg && !trip && !reunion) { applyDecay(); if (dayCheck()) greet(); save(); updateUI(); } }, 20000);
 requestAnimationFrame(frame);
 })();
 </script>
